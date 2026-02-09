@@ -1,0 +1,654 @@
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パクリTracker - AIESEC in Japan</title>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
+    :root {
+    --glass: rgba(255,255,255,0.12);
+    --glass-strong: rgba(255,255,255,0.2);
+    --glass-card: rgba(255,255,255,0.55);
+    --glass-card-hover: rgba(255,255,255,0.7);
+    --border: rgba(255,255,255,0.3);
+    --border-strong: rgba(255,255,255,0.5);
+    --shadow: 0 8px 32px rgba(0,0,0,0.08);
+    --shadow-hover: 0 16px 48px rgba(0,0,0,0.12);
+    --blur: blur(20px);
+    --blur-strong: blur(40px);
+    --accent: #f97316;
+    --accent-glow: rgba(249,115,22,0.3);
+    --fire: linear-gradient(135deg, #f97316, #ef4444, #ec4899);
+    --text: #1e1b2e;
+    --text-sub: #6b7280;
+    --radius: 20px;
+    --radius-sm: 14px;
+    --radius-xs: 10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+    font-family:'Noto Sans JP','Lato',sans-serif;
+    min-height:100vh;color:var(--text);
+    background:#0f0a1a;
+    overflow-x:hidden;
+    }
+    input,select,textarea,button{font-family:inherit}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow)}
+
+    /* ===== ANIMATED BG ===== */
+    .bg-wrapper{position:fixed;inset:0;z-index:0;overflow:hidden}
+    .bg-blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.6;animation:float 20s ease-in-out infinite}
+    .bg-blob:nth-child(1){width:600px;height:600px;background:#f97316;top:-10%;left:-10%;animation-delay:0s}
+    .bg-blob:nth-child(2){width:500px;height:500px;background:#ec4899;top:30%;right:-15%;animation-delay:-5s;animation-duration:25s}
+    .bg-blob:nth-child(3){width:700px;height:700px;background:#8b5cf6;bottom:-20%;left:20%;animation-delay:-10s;animation-duration:30s}
+    .bg-blob:nth-child(4){width:400px;height:400px;background:#06b6d4;top:60%;left:-5%;animation-delay:-15s;animation-duration:22s}
+    .bg-noise{position:absolute;inset:0;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+    @keyframes float{
+    0%,100%{transform:translate(0,0) scale(1)}
+    25%{transform:translate(60px,-40px) scale(1.1)}
+    50%{transform:translate(-30px,60px) scale(0.95)}
+    75%{transform:translate(40px,30px) scale(1.05)}
+    }
+
+    .app{position:relative;z-index:1}
+
+    /* ===== HEADER ===== */
+    .header{
+    background:var(--glass);
+    backdrop-filter:var(--blur-strong);
+    -webkit-backdrop-filter:var(--blur-strong);
+    padding:28px 20px 20px;
+    color:#fff;
+    position:sticky;top:0;z-index:50;
+    border-bottom:1px solid var(--border);
+    }
+    .header-inner{max-width:800px;margin:0 auto}
+    .header-top{display:flex;justify-content:space-between;align-items:center}
+    .header h1{
+    font-family:'Lato','Noto Sans JP',sans-serif;
+    font-size:24px;font-weight:900;letter-spacing:-1px;
+    background:var(--fire);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+    }
+    .header .sub{font-size:12px;opacity:0.6;margin-top:4px;font-weight:500;letter-spacing:0.5px}
+    .btn-add{
+    background:var(--fire);color:#fff;border:none;border-radius:var(--radius-sm);
+    padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;
+    box-shadow:0 4px 20px var(--accent-glow);
+    transition:all 0.2s ease;letter-spacing:0.3px;
+    }
+    .btn-add:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
+
+    .mini-stats{display:flex;gap:10px;margin-top:18px}
+    .mini-stat{
+    flex:1;
+    background:var(--glass);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border-radius:var(--radius-sm);border:1px solid var(--border);
+    padding:10px;text-align:center;
+    transition:background 0.3s;
+    }
+    .mini-stat:hover{background:var(--glass-strong)}
+    .mini-stat small{font-size:11px;opacity:0.7;font-weight:500}
+    .mini-stat .val{font-family:'Lato',sans-serif;font-size:22px;font-weight:900;margin-top:2px}
+
+    .sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;opacity:0.5;margin-top:8px;font-weight:500}
+    .sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+    .sync-dot.on{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,0.5)}
+    .sync-dot.off{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,0.5)}
+
+    .tabs{display:flex;gap:4px;margin-top:14px}
+    .tab-btn{
+    flex:1;padding:9px 12px;border-radius:var(--radius-xs);border:none;
+    font-weight:700;font-size:12px;cursor:pointer;transition:all 0.25s;
+    letter-spacing:0.3px;
+    }
+    .tab-btn.active{background:rgba(255,255,255,0.9);color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+    .tab-btn:not(.active){background:var(--glass);color:rgba(255,255,255,0.7);border:1px solid transparent}
+    .tab-btn:not(.active):hover{background:var(--glass-strong);color:#fff}
+    .tab-btn.small{flex:none;padding:9px 14px}
+
+    /* ===== CONTENT ===== */
+    .content{max-width:800px;margin:0 auto;padding:20px 16px 120px}
+
+    .search-input{
+    width:100%;padding:12px 16px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);font-size:14px;
+    background:var(--glass-card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    margin-bottom:12px;color:var(--text);font-weight:500;
+    transition:all 0.2s;
+    }
+    .search-input::placeholder{color:var(--text-sub)}
+    .search-input:focus{background:var(--glass-card-hover);border-color:var(--accent)}
+
+    .filter-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+    .filter-btn{
+    padding:7px 14px;border-radius:30px;
+    border:1px solid var(--border);
+    background:var(--glass-card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    color:var(--text-sub);font-size:12px;font-weight:600;
+    cursor:pointer;transition:all 0.2s;
+    }
+    .filter-btn:hover{background:var(--glass-card-hover);border-color:rgba(0,0,0,0.1)}
+    .filter-btn.active{background:var(--fire);color:#fff;border-color:transparent;box-shadow:0 4px 16px var(--accent-glow)}
+    .sort-select{
+    padding:7px 12px;border-radius:var(--radius-xs);
+    border:1px solid var(--border);font-size:12px;font-weight:600;
+    background:var(--glass-card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    cursor:pointer;margin-left:auto;color:var(--text);
+    }
+
+    /* ===== CARDS ===== */
+    .card{
+    background:var(--glass-card);
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border-radius:var(--radius);
+    padding:20px;
+    border:1px solid var(--border);
+    cursor:pointer;
+    transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+    }
+    .card:hover{
+    background:var(--glass-card-hover);
+    transform:translateY(-4px);
+    box-shadow:var(--shadow-hover);
+    border-color:var(--border-strong);
+    }
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .card-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .cat-tag{
+    padding:4px 12px;border-radius:30px;font-size:11px;font-weight:700;
+    letter-spacing:0.3px;
+    border:1px solid rgba(0,0,0,0.05);
+    }
+    .lc-name{font-size:11px;color:var(--text-sub);font-weight:500}
+    .card h3{font-size:15px;font-weight:700;line-height:1.5;color:var(--text)}
+    .fire-badge{
+    border-radius:var(--radius-sm);padding:8px 14px;text-align:center;
+    min-width:52px;margin-left:12px;
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    }
+    .fire-badge.has{background:var(--fire);color:#fff;box-shadow:0 4px 20px var(--accent-glow)}
+    .fire-badge.empty{background:rgba(0,0,0,0.04);color:#ccc;border:1px solid rgba(0,0,0,0.05)}
+    .fire-badge small{font-size:11px;font-weight:600}
+    .fire-badge .num{font-family:'Lato',sans-serif;font-size:20px;font-weight:900}
+    .card-desc{font-size:13px;color:var(--text-sub);line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .card-bottom{display:flex;justify-content:space-between;align-items:center}
+    .card-date{font-size:11px;color:#aaa;font-weight:500}
+    .btn-pakuri{
+    background:var(--fire);color:#fff;border:none;
+    border-radius:var(--radius-xs);padding:9px 18px;
+    font-weight:700;font-size:13px;cursor:pointer;
+    box-shadow:0 4px 16px var(--accent-glow);
+    transition:all 0.2s;letter-spacing:0.3px;
+    }
+    .btn-pakuri:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 24px var(--accent-glow)}
+
+    .empty-state{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.4)}
+    .empty-state .icon{font-size:48px;margin-bottom:16px}
+
+    .loading{text-align:center;padding:60px;color:rgba(255,255,255,0.4)}
+    .spinner{
+    display:inline-block;width:28px;height:28px;
+    border:3px solid rgba(255,255,255,0.1);border-top-color:var(--accent);
+    border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ===== DASHBOARD ===== */
+    .dash-section{
+    background:var(--glass-card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border-radius:var(--radius);padding:20px;
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);margin-bottom:16px;
+    }
+    .dash-section h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)}
+    .top-card{
+    background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(249,115,22,0.15));
+    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border-radius:var(--radius);padding:20px;margin-bottom:16px;
+    border:1px solid rgba(251,191,36,0.3);
+    box-shadow:0 8px 32px rgba(251,191,36,0.08);
+    }
+    .top-card .label{font-size:12px;font-weight:700;color:#b45309;margin-bottom:6px;letter-spacing:0.5px;text-transform:uppercase}
+    .top-card .name{font-size:17px;font-weight:800;color:var(--text)}
+    .top-card .meta{font-size:13px;color:var(--text-sub);margin-top:6px}
+
+    .bar-row{margin-bottom:12px}
+    .bar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:12px}
+    .bar-track{height:8px;background:rgba(0,0,0,0.06);border-radius:4px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;transition:width 0.6s cubic-bezier(0.25,0.46,0.45,0.94)}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+    .rank-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;font-weight:500}
+
+    .kpi-row{margin-bottom:14px}
+    .kpi-header{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+    .kpi-header .label{font-weight:600;color:var(--text)}
+    .kpi-track{height:10px;background:rgba(0,0,0,0.06);border-radius:5px;overflow:hidden}
+    .kpi-fill{height:100%;border-radius:5px;transition:width 0.6s cubic-bezier(0.25,0.46,0.45,0.94)}
+    .kpi-pct{font-size:11px;color:var(--text-sub);margin-top:3px;font-weight:500}
+
+    /* ===== SETTINGS ===== */
+    .settings-btn{
+    display:block;width:100%;padding:14px 18px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);
+    background:var(--glass-card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    font-size:14px;font-weight:600;cursor:pointer;text-align:left;
+    color:var(--text);margin-bottom:12px;transition:all 0.2s;
+    }
+    .settings-btn:hover{background:var(--glass-card-hover);transform:translateY(-1px)}
+    .settings-btn.danger{border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);color:#dc2626}
+    .settings-btn.danger:hover{background:rgba(239,68,68,0.12)}
+    .howto{
+    margin-top:8px;padding:18px;
+    background:rgba(0,0,0,0.03);border-radius:var(--radius-sm);
+    font-size:12px;color:var(--text-sub);line-height:2;font-weight:500;
+    }
+
+    /* ===== MODALS ===== */
+    .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.4);
+    z-index:100;display:flex;align-items:flex-end;justify-content:center;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    }
+    .overlay.center{align-items:center}
+    .modal{
+    background:rgba(255,255,255,0.85);
+    backdrop-filter:var(--blur-strong);-webkit-backdrop-filter:var(--blur-strong);
+    border-radius:var(--radius) var(--radius) 0 0;
+    padding:28px 22px 36px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;
+    animation:slideUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    border:1px solid rgba(255,255,255,0.5);
+    border-bottom:none;
+    }
+    .modal.center-modal{border-radius:var(--radius);animation:scaleIn 0.25s ease;border-bottom:1px solid rgba(255,255,255,0.5)}
+    .modal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+    .modal-top h2{font-size:18px;font-weight:800}
+    .btn-close{
+    background:rgba(0,0,0,0.06);border:none;border-radius:50%;
+    width:34px;height:34px;font-size:16px;cursor:pointer;
+    color:var(--text-sub);transition:all 0.2s;
+    }
+    .btn-close:hover{background:rgba(0,0,0,0.1);transform:rotate(90deg)}
+    .form-group{margin-bottom:16px}
+    .form-group label{font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:5px}
+    .form-input{
+    width:100%;padding:11px 16px;border-radius:var(--radius-xs);
+    border:1px solid rgba(0,0,0,0.1);font-size:14px;
+    background:rgba(255,255,255,0.6);color:var(--text);font-weight:500;
+    transition:all 0.2s;
+    }
+    .form-input:hover{border-color:rgba(0,0,0,0.15)}
+    textarea.form-input{resize:vertical}
+    .cat-btns{display:flex;gap:6px;flex-wrap:wrap}
+    .cat-btn{
+    padding:7px 16px;border-radius:30px;font-size:13px;font-weight:600;
+    cursor:pointer;border:1.5px solid rgba(0,0,0,0.08);
+    background:rgba(255,255,255,0.5);color:#999;
+    transition:all 0.2s;
+    }
+    .btn-submit{
+    width:100%;background:var(--fire);color:#fff;border:none;
+    border-radius:var(--radius-sm);padding:15px;font-weight:700;font-size:15px;
+    cursor:pointer;margin-top:6px;
+    box-shadow:0 6px 24px var(--accent-glow);
+    transition:all 0.2s;letter-spacing:0.3px;
+    }
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 32px var(--accent-glow)}
+    .btn-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
+    .btn-delete{
+    width:100%;background:transparent;color:#aaa;border:1px solid rgba(0,0,0,0.08);
+    border-radius:var(--radius-sm);padding:12px;font-weight:600;font-size:13px;
+    cursor:pointer;margin-top:8px;transition:all 0.2s;
+    }
+    .btn-delete:hover{background:rgba(239,68,68,0.08);color:#dc2626;border-color:rgba(239,68,68,0.3)}
+    .btn-cancel{
+    flex:1;padding:13px;border-radius:var(--radius-xs);
+    border:1px solid rgba(0,0,0,0.1);background:rgba(255,255,255,0.5);
+    font-weight:600;font-size:14px;cursor:pointer;color:var(--text-sub);
+    transition:all 0.2s;
+    }
+    .btn-cancel:hover{background:rgba(255,255,255,0.8)}
+    .btn-confirm{
+    flex:1;padding:13px;border-radius:var(--radius-xs);border:none;
+    background:var(--fire);color:#fff;font-weight:700;font-size:14px;
+    cursor:pointer;box-shadow:0 4px 16px var(--accent-glow);
+    transition:all 0.2s;
+    }
+    .btn-confirm:hover{transform:translateY(-1px)}
+
+    .detail-section{margin-bottom:18px}
+    .detail-section h4{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:0.3px}
+    .detail-section p{font-size:14px;color:#4b5563;line-height:1.7}
+    .pakuri-list{display:flex;flex-wrap:wrap;gap:6px}
+    .pakuri-chip{
+    padding:5px 12px;border-radius:30px;font-size:12px;font-weight:700;
+    background:linear-gradient(135deg,rgba(249,115,22,0.12),rgba(236,72,153,0.08));
+    color:#c2410c;border:1px solid rgba(249,115,22,0.2);
+    }
+
+    .toast{
+    position:fixed;top:24px;left:50%;transform:translateX(-50%);
+    background:rgba(30,27,46,0.9);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    color:#fff;padding:14px 28px;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:600;z-index:1000;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.1);
+    animation:slideDown 0.3s ease;pointer-events:none;
+    }
+
+    /* ===== SECTION TITLES ===== */
+    .section-title{font-family:'Lato','Noto Sans JP',sans-serif;font-size:20px;font-weight:900;margin-bottom:18px;color:#fff;letter-spacing:-0.5px}
+
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0.8}to{transform:translateY(0);opacity:1}}
+    @keyframes slideDown{from{transform:translateY(-20px) translateX(-50%);opacity:0}to{transform:translateY(0) translateX(-50%);opacity:1}}
+    @keyframes scaleIn{from{transform:scale(0.92);opacity:0}to{transform:scale(1);opacity:1}}
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
+    </style>
+    </head>
+    <body>
+
+    <!-- Animated background -->
+    <div class="bg-wrapper">
+    <div class="bg-blob"></div><div class="bg-blob"></div><div class="bg-blob"></div><div class="bg-blob"></div>
+    <div class="bg-noise"></div>
+    </div>
+
+    <div class="app">
+    <div id="toast" class="toast" style="display:none"></div>
+
+    <div class="header">
+        <div class="header-inner">
+        <div class="header-top">
+            <div>
+            <h1>パクリTracker</h1>
+            <p class="sub">AIESEC in Japan ナレッジ共有プラットフォーム</p>
+            <div class="sync-badge"><span class="sync-dot off" id="sync-dot"></span><span id="sync-text">接続中...</span></div>
+            </div>
+            <button class="btn-add" onclick="openRegister()">＋ 施策を登録</button>
+        </div>
+        <div class="mini-stats">
+            <div class="mini-stat"><small>📝 施策数</small><div class="val" id="stat-total">-</div></div>
+            <div class="mini-stat"><small>🔥 パクリ数</small><div class="val" id="stat-pakuri">-</div></div>
+            <div class="mini-stat"><small>🏫 参加LC</small><div class="val" id="stat-lcs">-</div></div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('list',this)">📋 施策一覧</button>
+            <button class="tab-btn" onclick="switchTab('dashboard',this)">📊 ダッシュボード</button>
+            <button class="tab-btn small" onclick="switchTab('settings',this)">⚙️</button>
+        </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="tab-list">
+        <input type="text" class="search-input" placeholder="🔍 施策名・LC名で検索..." oninput="renderList()">
+        <div class="filter-row">
+            <button class="filter-btn active" onclick="setFilter('all',this)">全て</button>
+            <button class="filter-btn" onclick="setFilter('採用',this)">採用</button>
+            <button class="filter-btn" onclick="setFilter('育成',this)">育成</button>
+            <button class="filter-btn" onclick="setFilter('Planning',this)">Planning</button>
+            <button class="filter-btn" onclick="setFilter('チームビルディング',this)">チームビルディング</button>
+            <button class="filter-btn" onclick="setFilter('その他',this)">その他</button>
+            <select class="sort-select" onchange="currentSort=this.value;renderList()">
+            <option value="popular">🔥 人気順</option>
+            <option value="newest">🆕 新着順</option>
+            </select>
+        </div>
+        <div id="card-list"><div class="loading"><div class="spinner"></div><p>データを読み込み中...</p></div></div>
+        </div>
+        <div id="tab-dashboard" style="display:none"></div>
+        <div id="tab-settings" style="display:none">
+        <h2 class="section-title">⚙️ 設定</h2>
+        <div class="dash-section" style="display:flex;flex-direction:column;gap:0">
+            <button class="settings-btn" onclick="exportData()">📥 データをエクスポート（JSON）</button>
+            <button class="settings-btn danger" onclick="loadSampleData()">🔄 サンプルデータを投入</button>
+            <div class="howto">
+            <p style="font-weight:700;margin-bottom:6px">💡 使い方</p>
+            <p>1. 「施策を登録」から他LCに共有したい施策を登録</p>
+            <p>2. 一覧から気になる施策を見つけたら「🔥 パクる！」</p>
+            <p>3. ダッシュボードで全体の統計を確認</p>
+            <p>4. データはリアルタイムで全員に共有されます 🌐</p>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-register" class="overlay" style="display:none" onclick="closeRegister()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-top"><h2>📝 施策を登録する</h2><button class="btn-close" onclick="closeRegister()">✕</button></div>
+        <div class="form-group"><label>施策名 *</label><input id="f-name" class="form-input" placeholder="例: 新歓LINEオープンチャット施策"></div>
+        <div class="form-group"><label>あなたのLC *</label><select id="f-lc" class="form-input"><option value="">選択してください</option></select></div>
+        <div class="form-group"><label>カテゴリ *</label><div class="cat-btns" id="f-cat-btns"></div></div>
+        <div class="form-group"><label>この施策で何をした？ *</label><textarea id="f-desc" class="form-input" rows="3" placeholder="具体的に何をしたかを書いてください"></textarea></div>
+        <div class="form-group"><label>どんな成果が出た？ *</label><textarea id="f-result" class="form-input" rows="2" placeholder="数字でも定性でもOK"></textarea></div>
+        <div class="form-group"><label>資料リンク（任意）</label><input id="f-link" class="form-input" placeholder="https://..."></div>
+        <button class="btn-submit" id="btn-register-submit" onclick="submitRegister()">🎉 登録する！</button>
+    </div>
+    </div>
+
+    <div id="modal-pakuri" class="overlay center" style="display:none" onclick="closePakuri()">
+    <div class="modal center-modal" style="max-width:400px;padding:28px" onclick="event.stopPropagation()">
+        <h3 style="font-size:18px;font-weight:800;text-align:center;margin-bottom:4px">🔥 パクる！</h3>
+        <p style="font-size:13px;color:var(--text-sub);text-align:center;margin-bottom:18px">あなたのLCを選んでください</p>
+        <select id="p-lc" class="form-input" style="margin-bottom:18px"><option value="">LCを選択</option></select>
+        <div style="display:flex;gap:10px">
+        <button class="btn-cancel" onclick="closePakuri()">キャンセル</button>
+        <button class="btn-confirm" onclick="submitPakuri()">🔥 パクる！</button>
+        </div>
+    </div>
+    </div>
+
+    <div id="modal-detail" class="overlay" style="display:none" onclick="closeDetail()">
+    <div class="modal" onclick="event.stopPropagation()"><div id="detail-content"></div></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+    <script>
+    firebase.initializeApp({
+    apiKey:"AIzaSyByjE8Nm0Cisa_GaUJyYWbRn8EjzA4BIWc",
+    authDomain:"pakuri-tracker.firebaseapp.com",
+    projectId:"pakuri-tracker",
+    storageBucket:"pakuri-tracker.firebasestorage.app",
+    messagingSenderId:"20264679626",
+    appId:"1:20264679626:web:36bfff1bc3fe47f5fddc33"
+    });
+    const db=firebase.firestore(),strategiesRef=db.collection("strategies");
+
+    const CATEGORIES=["採用","育成","Planning","チームビルディング","その他"];
+    const LC_LIST=["HD - 北海道委員会","AG - 青山学院委員会","CH - 中央大学委員会","HI - 一橋大学委員会","JO - 上智大学委員会","KO - 慶應義塾大学委員会","MJ - 明治大学委員会","SFC - 湘南藤沢委員会","SP - 立教大学委員会","TKB - 筑波大学委員会","TO - 東京大学委員会","WA - 早稲田大学委員会","NA - 名古屋大学委員会","NI - 名古屋市立大学委員会","NZ - 南山大学委員会","DO - 同志社大学委員会","KB - 神戸大学委員会","KG - 関西学院大学委員会","KT - 京都大学委員会","OI - 大阪市立大学委員会","OS - 大阪大学委員会","SG - 滋賀大学委員会","HU - 広島委員会","APU - 立命館アジア太平洋大学委員会","FK - 福岡委員会"];
+    const CAT_COLORS={
+    "採用":{bg:"rgba(254,243,199,0.7)",text:"#92400e",border:"rgba(252,211,77,0.5)",fill:"linear-gradient(90deg,#fcd34d,#92400e)"},
+    "育成":{bg:"rgba(220,252,231,0.7)",text:"#166534",border:"rgba(134,239,172,0.5)",fill:"linear-gradient(90deg,#86efac,#166534)"},
+    "Planning":{bg:"rgba(224,231,255,0.7)",text:"#3730a3",border:"rgba(165,180,252,0.5)",fill:"linear-gradient(90deg,#a5b4fc,#3730a3)"},
+    "チームビルディング":{bg:"rgba(254,226,226,0.7)",text:"#991b1b",border:"rgba(252,165,165,0.5)",fill:"linear-gradient(90deg,#fca5a5,#991b1b)"},
+    "その他":{bg:"rgba(229,231,235,0.7)",text:"#374151",border:"rgba(156,163,175,0.5)",fill:"linear-gradient(90deg,#9ca3af,#374151)"}
+    };
+    const SAMPLE=[
+    {name:"新歓LINEオープンチャット施策",lc:"KO - 慶應義塾大学委員会",category:"採用",description:"新歓期に個別LINEが増えすぎてメンバーが疲弊していたため、LINEオープンチャットを作成。新入生を全員招待し、1対1は重要な人だけに絞った。",result:"対応工数80h→30hに削減。メンバー満足度UP、新入生も質問しやすい環境に。",link:"",createdAt:"2026-01-15T10:00:00Z",pakuttaLCs:["HI - 一橋大学委員会","WA - 早稲田大学委員会","TO - 東京大学委員会","OS - 大阪大学委員会"]},
+    {name:"チーム朝会15分フォーマット",lc:"WA - 早稲田大学委員会",category:"チームビルディング",description:"毎朝15分のスタンドアップミーティングを導入。フォーマット: ①昨日やったこと ②今日やること ③困ってること の3点のみ。Slack非同期でもOK。",result:"チーム内の情報共有が改善。タスクの重複が減少。週次MTGが30分短縮。",link:"",createdAt:"2026-01-20T10:00:00Z",pakuttaLCs:["KG - 関西学院大学委員会","DO - 同志社大学委員会"]},
+    {name:"Planning逆算シート",lc:"TO - 東京大学委員会",category:"Planning",description:"IXP目標から逆算してWeekly KPIを自動算出するGoogleスプレッドシートを作成。入力はIXP目標と現在値のみ。",result:"Planning時間が半減。メンバーが自分の週次目標を明確に把握。達成率15%向上。",link:"https://docs.google.com/spreadsheets/example",createdAt:"2026-02-01T10:00:00Z",pakuttaLCs:["HI - 一橋大学委員会","KO - 慶應義塾大学委員会","NA - 名古屋大学委員会","KB - 神戸大学委員会","HD - 北海道委員会","FK - 福岡委員会"]},
+    {name:"メンバー1on1テンプレート",lc:"HI - 一橋大学委員会",category:"育成",description:"月1回の1on1で使うNotionテンプレート。質問項目: ①今月の学び ②困っていること ③来月チャレンジしたいこと ④EBへの要望。記録が蓄積される。",result:"メンバー定着率20%改善。EBが個人の状況を把握しやすくなった。",link:"",createdAt:"2026-02-05T10:00:00Z",pakuttaLCs:["AG - 青山学院委員会"]},
+    {name:"Instagram運用カレンダー",lc:"SP - 立教大学委員会",category:"その他",description:"月ごとの投稿テーマとスケジュールをGoogleカレンダーで管理。テンプレートを用意して、誰でも投稿作成できるように。Canvaテンプレートも併用。",result:"投稿頻度が週1→週3に。フォロワー30%増。新歓での認知度向上。",link:"",createdAt:"2026-02-03T10:00:00Z",pakuttaLCs:["MJ - 明治大学委員会","CH - 中央大学委員会","JO - 上智大学委員会"]}
+    ];
+
+    let strategies=[],currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null;
+
+    function init(){
+    populateLCSelects();buildCatButtons();
+    strategiesRef.onSnapshot(snap=>{
+        strategies=snap.docs.map(d=>({id:d.id,...d.data()}));
+        updateStats();renderList();
+        document.getElementById("sync-dot").className="sync-dot on";
+        document.getElementById("sync-text").textContent="リアルタイム同期中";
+    },err=>{
+        console.error(err);
+        document.getElementById("sync-dot").className="sync-dot off";
+        document.getElementById("sync-text").textContent="接続エラー";
+    });
+    }
+
+    function populateLCSelects(){
+    ["f-lc","p-lc"].forEach(id=>{
+        const s=document.getElementById(id),f=s.options[0];s.innerHTML="";s.appendChild(f);
+        LC_LIST.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l;s.appendChild(o)});
+    });
+    }
+    function buildCatButtons(){
+    const c=document.getElementById("f-cat-btns");c.innerHTML="";
+    CATEGORIES.forEach(cat=>{const b=document.createElement("button");b.type="button";b.className="cat-btn";b.textContent=cat;b.onclick=()=>{currentCat=cat;updateCatBtnStyles()};c.appendChild(b)});
+    updateCatBtnStyles();
+    }
+    function updateCatBtnStyles(){
+    document.querySelectorAll("#f-cat-btns .cat-btn").forEach(b=>{
+        const c=b.textContent,cc=CAT_COLORS[c];
+        if(c===currentCat){b.style.borderColor=cc.border;b.style.background=cc.bg;b.style.color=cc.text}
+        else{b.style.borderColor="rgba(0,0,0,0.08)";b.style.background="rgba(255,255,255,0.5)";b.style.color="#999"}
+    });
+    }
+
+    function showToast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2500)}
+
+    function switchTab(tab,btn){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
+    ["list","dashboard","settings"].forEach(t=>document.getElementById("tab-"+t).style.display=t===tab?"":"none");
+    if(tab==="dashboard")renderDashboard();
+    }
+
+    function updateStats(){
+    document.getElementById("stat-total").textContent=strategies.length;
+    const tp=strategies.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0);
+    document.getElementById("stat-pakuri").textContent=tp;
+    const lcs=new Set([...strategies.map(s=>s.lc),...strategies.flatMap(s=>s.pakuttaLCs||[])]);
+    document.getElementById("stat-lcs").textContent=lcs.size;
+    }
+
+    function setFilter(cat,btn){currentFilter=cat;document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");renderList()}
+
+    function renderList(){
+    const q=(document.querySelector(".search-input")||{}).value?.toLowerCase()||"";
+    let items=[...strategies];
+    if(currentFilter!=="all")items=items.filter(s=>s.category===currentFilter);
+    if(q)items=items.filter(s=>s.name.toLowerCase().includes(q)||s.lc.toLowerCase().includes(q)||(s.description||"").toLowerCase().includes(q));
+    if(currentSort==="popular")items.sort((a,b)=>(b.pakuttaLCs||[]).length-(a.pakuttaLCs||[]).length);
+    else items.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+
+    const el=document.getElementById("card-list");
+    if(!items.length){el.innerHTML='<div class="empty-state"><div class="icon">🔍</div><p style="font-weight:600;font-size:15px">施策が見つかりません</p><p style="font-size:13px;margin-top:4px">最初の施策を登録しよう！</p></div>';return}
+    el.innerHTML=items.map(s=>{
+        const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"],n=(s.pakuttaLCs||[]).length,d=new Date(s.createdAt).toLocaleDateString("ja-JP");
+        return`<div class="card" onclick="openDetail('${s.id}')"><div class="card-top"><div style="flex:1"><div class="card-meta"><span class="cat-tag" style="background:${cc.bg};color:${cc.text};border:1px solid ${cc.border}">${s.category}</span><span class="lc-name">${s.lc}</span></div><h3>${esc(s.name)}</h3></div><div class="fire-badge ${n?'has':'empty'}"><small>🔥</small><div class="num">${n}</div></div></div><p class="card-desc">${esc(s.description)}</p><div class="card-bottom"><span class="card-date">${d} 登録</span><button class="btn-pakuri" onclick="event.stopPropagation();openPakuri('${s.id}')">🔥 パクる！</button></div></div>`;
+    }).join("");
+    }
+
+    function openDetail(id){
+    const s=strategies.find(x=>x.id===id);if(!s)return;
+    const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"],d=new Date(s.createdAt).toLocaleDateString("ja-JP"),p=s.pakuttaLCs||[];
+    let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px"><div style="flex:1"><span class="cat-tag" style="background:${cc.bg};color:${cc.text};border:1px solid ${cc.border}">${s.category}</span><h2 style="font-size:18px;font-weight:800;margin:10px 0 4px">${esc(s.name)}</h2><p style="font-size:13px;color:var(--text-sub)">📍 ${s.lc}　·　📅 ${d}</p></div><button class="btn-close" onclick="closeDetail()">✕</button></div>`;
+    h+=`<div class="detail-section"><h4>📋 施策内容</h4><p>${esc(s.description)}</p></div>`;
+    h+=`<div class="detail-section"><h4>✨ 成果</h4><p>${esc(s.result)}</p></div>`;
+    if(s.link)h+=`<div class="detail-section"><h4>📎 資料</h4><a href="${esc(s.link)}" target="_blank" style="font-size:13px;color:var(--accent);word-break:break-all;font-weight:600">${esc(s.link)}</a></div>`;
+    h+=`<div style="background:${p.length?'rgba(249,115,22,0.06)':'rgba(0,0,0,0.02)'};border-radius:var(--radius-sm);padding:16px;margin-bottom:18px;border:1px solid ${p.length?'rgba(249,115,22,0.15)':'rgba(0,0,0,0.05)'}"><h4 style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">🔥 パクったLC (${p.length})</h4>${p.length===0?'<p style="font-size:13px;color:var(--text-sub)">まだ誰もパクってません。最初にパクろう！</p>':'<div class="pakuri-list">'+p.map(l=>`<span class="pakuri-chip">${l.split(" - ")[0]}</span>`).join("")+'</div>'}</div>`;
+    h+=`<button class="btn-submit" onclick="closeDetail();openPakuri('${s.id}')">🔥 この施策をパクる！</button>`;
+    h+=`<button class="btn-delete" onclick="confirmDelete('${s.id}')">🗑 この施策を削除する</button>`;
+    document.getElementById("detail-content").innerHTML=h;
+    document.getElementById("modal-detail").style.display="flex";
+    }
+    function closeDetail(){document.getElementById("modal-detail").style.display="none"}
+
+    function openRegister(){
+    ["f-name","f-desc","f-result","f-link"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("f-lc").value="";currentCat="採用";updateCatBtnStyles();
+    const b=document.getElementById("btn-register-submit");b.disabled=false;b.textContent="🎉 登録する！";
+    document.getElementById("modal-register").style.display="flex";
+    }
+    function closeRegister(){document.getElementById("modal-register").style.display="none"}
+
+    async function submitRegister(){
+    const name=document.getElementById("f-name").value.trim(),lc=document.getElementById("f-lc").value;
+    const desc=document.getElementById("f-desc").value.trim(),result=document.getElementById("f-result").value.trim();
+    const link=document.getElementById("f-link").value.trim();
+    if(!name||!lc||!desc||!result){showToast("⚠️ 必須項目を入力してください");return}
+    const btn=document.getElementById("btn-register-submit");btn.disabled=true;btn.textContent="登録中...";
+    try{await strategiesRef.add({name,lc,category:currentCat,description:desc,result,link,createdAt:new Date().toISOString(),pakuttaLCs:[]});closeRegister();showToast("🎉 施策を登録しました！")}
+    catch(e){console.error(e);showToast("⚠️ エラーが発生しました");btn.disabled=false;btn.textContent="🎉 登録する！"}
+    }
+
+    function openPakuri(id){pakuriTargetId=id;document.getElementById("p-lc").value="";document.getElementById("modal-pakuri").style.display="flex"}
+    function closePakuri(){document.getElementById("modal-pakuri").style.display="none";pakuriTargetId=null}
+
+    async function submitPakuri(){
+    const lc=document.getElementById("p-lc").value;
+    if(!lc){showToast("⚠️ LCを選択してください");return}
+    const s=strategies.find(x=>x.id===pakuriTargetId);if(!s)return;
+    if((s.pakuttaLCs||[]).includes(lc)){showToast("⚠️ このLCは既にパクり済みです");closePakuri();return}
+    try{await strategiesRef.doc(pakuriTargetId).update({pakuttaLCs:firebase.firestore.FieldValue.arrayUnion(lc)});closePakuri();showToast("🔥 パクり完了！")}
+    catch(e){console.error(e);showToast("⚠️ エラーが発生しました")}
+    }
+
+    function renderDashboard(){
+    const tp=strategies.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0);
+    const top=[...strategies].sort((a,b)=>(b.pakuttaLCs||[]).length-(a.pakuttaLCs||[]).length)[0];
+    const catStats={};CATEGORIES.forEach(c=>{const it=strategies.filter(s=>s.category===c);catStats[c]={count:it.length,pakuri:it.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0)}});
+    const maxP=Math.max(...Object.values(catStats).map(s=>s.pakuri),1);
+    const lcP={},lcR={};
+    strategies.forEach(s=>{lcR[s.lc]=(lcR[s.lc]||0)+1;(s.pakuttaLCs||[]).forEach(l=>{lcP[l]=(lcP[l]||0)+1})});
+    const tP=Object.entries(lcP).sort((a,b)=>b[1]-a[1]).slice(0,5),tR=Object.entries(lcR).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const m=["🥇","🥈","🥉"];
+    let h='<h2 class="section-title">📊 ダッシュボード</h2>';
+    if(top)h+=`<div class="top-card"><div class="label">👑 Most Popular</div><div class="name">${esc(top.name)}</div><div class="meta">${top.lc} · 🔥 ${(top.pakuttaLCs||[]).length} LCがパクった</div></div>`;
+    h+='<div class="dash-section"><h3>📁 カテゴリ別</h3>';
+    CATEGORIES.forEach(c=>{const cc=CAT_COLORS[c],st=catStats[c];h+=`<div class="bar-row"><div class="bar-header"><span style="padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${cc.bg};color:${cc.text}">${c}</span><span style="color:var(--text-sub);font-weight:500">${st.count}施策 · 🔥${st.pakuri}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(st.pakuri/maxP)*100}%;background:${cc.fill}"></div></div></div>`});
+    h+='</div><div class="grid-2"><div class="dash-section"><h3>🔥 パクリ王 TOP5</h3>';
+    if(!tP.length)h+='<p style="font-size:12px;color:var(--text-sub)">データなし</p>';
+    else tP.forEach(([l,n],i)=>{h+=`<div class="rank-item"><span style="color:var(--text)">${m[i]||((i+1)+".")} ${l.split(" - ")[0]}</span><span style="font-weight:700;color:var(--accent)">${n}</span></div>`});
+    h+='</div><div class="dash-section"><h3>📝 登録王 TOP5</h3>';
+    if(!tR.length)h+='<p style="font-size:12px;color:var(--text-sub)">データなし</p>';
+    else tR.forEach(([l,n],i)=>{h+=`<div class="rank-item"><span style="color:var(--text)">${m[i]||((i+1)+".")} ${l.split(" - ")[0]}</span><span style="font-weight:700;color:#8b5cf6">${n}</span></div>`});
+    h+='</div></div><div class="dash-section"><h3>🎯 KPI進捗</h3>';
+    [{label:"施策登録数",cur:strategies.length,tar:100,col:"#8b5cf6"},{label:"パクリ実装数",cur:tp,tar:300,col:"var(--accent)"}].forEach(k=>{
+        const p=Math.round((k.cur/k.tar)*100);
+        h+=`<div class="kpi-row"><div class="kpi-header"><span class="label">${k.label}</span><span style="color:${k.col};font-weight:700">${k.cur} / ${k.tar}</span></div><div class="kpi-track"><div class="kpi-fill" style="width:${Math.min(p,100)}%;background:${k.col}"></div></div><div class="kpi-pct">達成率: ${p}%</div></div>`;
+    });
+    h+='</div>';
+    document.getElementById("tab-dashboard").innerHTML=h;
+    }
+
+    function exportData(){
+    const b=new Blob([JSON.stringify(strategies,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="pakuri-tracker-data.json";a.click();
+    showToast("📥 エクスポートしました");
+    }
+
+    async function loadSampleData(){
+    if(!confirm("サンプルデータ5件を投入しますか？"))return;
+    try{const batch=db.batch();SAMPLE.forEach(s=>batch.set(strategiesRef.doc(),s));await batch.commit();showToast("🎉 サンプルデータを投入しました")}
+    catch(e){console.error(e);showToast("⚠️ エラーが発生しました")}
+    }
+
+    async function confirmDelete(id){
+    const s=strategies.find(x=>x.id===id);if(!s)return;
+    if(!confirm(`「${s.name}」を削除しますか？\nこの操作は取り消せません。`))return;
+    try{await strategiesRef.doc(id).delete();closeDetail();showToast("🗑 施策を削除しました")}
+    catch(e){console.error(e);showToast("⚠️ 削除に失敗しました")}
+    }
+
+    function esc(s){if(!s)return"";const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+    init();
+    </script>
+    </body>
+    </html>
