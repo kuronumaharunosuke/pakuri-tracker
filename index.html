@@ -630,6 +630,7 @@ const BADGE_DEFS=[
 function getBadges(lc){return BADGE_DEFS.filter(b=>b.check(lc,strategies,failureCases))}
 
 
+let strategies=[],failureCases=[],pendingItems=[],pendingFailures=[];
 let currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null;
 let currentFailCat="採用",currentLCFilter="",currentTermFilter="";
 let followupTargetId=null,followupResult=null;
@@ -649,27 +650,34 @@ function init(){
   populateLCSelects();
   buildCatButtons();
   buildFailCatButtons();
-  // 承認済み施策
+
+  // 承認済み施策（メイン - これが来たらすぐ描画）
   strategiesRef.onSnapshot(snap=>{
     strategies=snap.docs.map(d=>({id:d.id,...d.data()}));
     updateStats();renderList();
-  },err=>console.error(err));
+  },err=>{
+    console.error("strategies error:",err);
+    document.getElementById("card-list").innerHTML=`<div class="empty-state"><p style="color:#d32f2f;font-size:13px;font-weight:700">読み込みエラー</p><p style="font-size:12px;color:#aaa;margin-top:4px">${err.code||err.message}</p><button class="btn-pakuri" style="margin-top:12px" onclick="location.reload()">再読み込み</button></div>`;
+  });
   // 承認待ち施策
   pendingRef.onSnapshot(snap=>{
     pendingItems=snap.docs.map(d=>({id:d.id,...d.data()}));
     updatePendingBadge();
-  },err=>console.error(err));
-  // 承認済み失敗事例
+  },err=>console.error("pending error:",err));
+  // 承認済み失敗事例（独立して描画）
   failureRef.onSnapshot(snap=>{
     failureCases=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderFailureList();
-    updateStats();
-  },err=>console.error(err));
+  },err=>{
+    console.error("failures error:",err);
+    const el=document.getElementById("failure-list");
+    if(el)el.innerHTML=`<div style="text-align:center;padding:20px;color:#aaa;font-size:13px">読み込みエラー: ${err.code||err.message}<br><small>Firestoreルールにfailure_casesを追加してください</small></div>`;
+  });
   // 承認待ち失敗事例
   pendingFailureRef.onSnapshot(snap=>{
     pendingFailures=snap.docs.map(d=>({id:d.id,...d.data()}));
     updatePendingBadge();
-  },err=>console.error(err));
+  },err=>console.error("pending failures error:",err));
 }
 
 function populateLCSelects(){
