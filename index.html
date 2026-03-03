@@ -132,6 +132,28 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--aiesec-b
 .kpi-fill{height:100%;border-radius:4px}
 .kpi-pct{font-size:11px;color:var(--text-sub);margin-top:2px}
 
+.fu-result-btn{
+  flex:1;padding:8px 4px;border-radius:6px;border:1.5px solid var(--border);
+  background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--text-sub);
+  transition:all 0.15s;
+}
+.fu-result-btn.active-success{border-color:var(--aiesec-green);background:#E8F5E9;color:#1B5E20}
+.fu-result-btn.active-partial{border-color:#FFB300;background:#FFF8E1;color:#E65100}
+.fu-result-btn.active-fail{border-color:var(--aiesec-red);background:#FFEBEE;color:#c62828}
+.suggest-item{
+  padding:8px 10px;border-radius:6px;background:#fff;margin-bottom:4px;
+  border:1px solid #FFE082;font-size:12px;cursor:pointer;
+}
+.suggest-item:hover{background:#FFF9C4}
+.suggest-item .s-name{font-weight:700;color:#333;margin-bottom:2px}
+.suggest-item .s-meta{color:#888}
+.followup-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:4px;
+}
+.followup-chip.success{background:#E8F5E9;color:#1B5E20}
+.followup-chip.partial{background:#FFF8E1;color:#E65100}
+.followup-chip.fail{background:#FFEBEE;color:#c62828}
 /* ===== FAILURE SECTION ===== */
 .failure-card{
   background:var(--white);border-radius:var(--r);padding:16px;
@@ -317,10 +339,14 @@ textarea.form-input{resize:vertical}
       <button class="btn-add" onclick="openRegister()">＋ 登録</button>
     </div>
   </div>
-  <div class="mini-stats">
+    <div class="mini-stats">
     <div class="mini-stat"><small>施策数</small><div class="val" id="stat-total">-</div></div>
     <div class="mini-stat"><small>パクリ数</small><div class="val" id="stat-pakuri">-</div></div>
     <div class="mini-stat"><small>参加LC</small><div class="val" id="stat-lcs">-</div></div>
+    <div class="mini-stat" id="stat-mypt-block" style="cursor:pointer" onclick="openMyLCSetting()">
+      <small id="stat-mypt-label" style="color:#FFD54F">自分のpt</small>
+      <div class="val" id="stat-pts" style="color:#FFD54F">-</div>
+    </div>
   </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('list',this)">施策一覧</button>
@@ -344,6 +370,9 @@ textarea.form-input{resize:vertical}
       <button class="filter-btn" onclick="setFilter('Planning',this)">Planning</button>
       <button class="filter-btn" onclick="setFilter('チームビルディング',this)">TB</button>
       <button class="filter-btn" onclick="setFilter('その他',this)">その他</button>
+      <select class="sort-select" id="lc-filter-select" onchange="currentLCFilter=this.value;renderList()">
+        <option value="">全LC</option>
+      </select>
       <select class="sort-select" onchange="currentSort=this.value;renderList()">
         <option value="popular">人気順</option>
         <option value="newest">新着順</option>
@@ -393,13 +422,39 @@ textarea.form-input{resize:vertical}
     <div style="background:#EBF5FF;border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:#0D47A1;display:flex;align-items:center;gap:8px">
       <span>投稿後、管理者が確認してから公開されます。</span>
     </div>
-    <div class="form-group"><label>施策名 *</label><input id="f-name" class="form-input" placeholder="例: 新歓LINEオープンチャット施策"></div>
+    <div class="form-group"><label>施策名 *</label><input id="f-name" class="form-input" placeholder="例: 新歓LINEオープンチャット施策" oninput="onStrategyNameInput(this.value)"></div>
+    <div id="suggest-box" style="display:none;margin:-10px 0 14px;border:1px solid #FFE082;border-radius:var(--r);background:#FFFDE7;padding:10px 12px">
+      <div style="font-size:11px;font-weight:700;color:#F57F17;margin-bottom:6px">類似する既存施策</div>
+      <div id="suggest-list"></div>
+    </div>
     <div class="form-group"><label>あなたのLC *</label><select id="f-lc" class="form-input"><option value="">選択してください</option></select></div>
     <div class="form-group"><label>カテゴリ *</label><div class="cat-btns" id="f-cat-btns"></div></div>
     <div class="form-group"><label>この施策で何をした？ *</label><textarea id="f-desc" class="form-input" rows="3" placeholder="具体的に何をしたかを書いてください"></textarea></div>
     <div class="form-group"><label>どんな成果が出た？ *</label><textarea id="f-result" class="form-input" rows="2" placeholder="数字でも定性でもOK"></textarea></div>
     <div class="form-group"><label>資料リンク（任意）</label><input id="f-link" class="form-input" placeholder="https://..."></div>
     <button class="btn-submit" id="btn-register-submit" onclick="submitRegister()">投稿する（承認待ちへ）</button>
+  </div>
+</div>
+
+<!-- パクり結果フォローアップ -->
+<div id="modal-followup" class="overlay center" style="display:none" onclick="closeFollowup()">
+  <div class="modal center-modal" style="max-width:440px;padding:24px" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h3 style="font-size:16px;font-weight:700">パクり結果を報告</h3>
+      <button class="btn-close" onclick="closeFollowup()">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:16px" id="followup-target-name"></p>
+    <div class="form-group"><label>あなたのLC *</label><select id="fu-lc" class="form-input"><option value="">選択してください</option></select></div>
+    <div class="form-group">
+      <label>実際にやってみてどうでしたか？*</label>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button type="button" class="fu-result-btn" data-val="success" onclick="selectFollowupResult('success')">うまくいった</button>
+        <button type="button" class="fu-result-btn" data-val="partial" onclick="selectFollowupResult('partial')">一部うまくいった</button>
+        <button type="button" class="fu-result-btn" data-val="fail" onclick="selectFollowupResult('fail')">うまくいかなかった</button>
+      </div>
+    </div>
+    <div class="form-group"><label>具体的にどうだったか（任意）</label><textarea id="fu-comment" class="form-input" rows="3" placeholder="数字や状況を書いてもらえると他LCの参考になります"></textarea></div>
+    <button class="btn-submit" id="btn-followup-submit" onclick="submitFollowup()">結果を投稿する</button>
   </div>
 </div>
 
@@ -488,6 +543,22 @@ textarea.form-input{resize:vertical}
   <div class="modal" onclick="event.stopPropagation()"><div id="failure-detail-content"></div></div>
 </div>
 
+<!-- 自分のLC設定 -->
+<div id="modal-mylc" class="overlay center" style="display:none" onclick="closeMyLCSetting()">
+  <div class="modal center-modal" style="max-width:360px;padding:24px" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h3 style="font-size:16px;font-weight:700">自分のLCを設定</h3>
+      <button class="btn-close" onclick="closeMyLCSetting()">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:16px">設定するとヘッダーに自分のLCのポイントが表示されます。端末に保存されます。</p>
+    <select id="mylc-select" class="form-input" style="margin-bottom:16px"><option value="">選択してください</option></select>
+    <div style="display:flex;gap:8px">
+      <button class="btn-cancel" onclick="clearMyLC()">設定を解除</button>
+      <button class="btn-confirm" onclick="saveMyLC()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -520,8 +591,11 @@ const CAT_COLORS={
 
 let strategies=[],pendingItems=[],failureCases=[],pendingFailures=[];
 let currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null;
-let currentFailCat="採用";
+let currentFailCat="採用",currentLCFilter="";
+let followupTargetId=null,followupResult=null;
 let isAdminLoggedIn=false;
+let suggestTimer=null;
+let myLC=localStorage.getItem("pakuri_myLC")||"";
 
 const SAMPLE=[
   {name:"新歓LINEオープンチャット施策",lc:"KO - 慶應義塾大学委員会",category:"採用",description:"新歓期に個別LINEが増えすぎてメンバーが疲弊していたため、LINEオープンチャットを作成。新入生を全員招待し、1対1は重要な人だけに絞った。",result:"対応工数80h→30hに削減。メンバー満足度UP、新入生も質問しやすい環境に。",link:"",createdAt:"2026-01-15T10:00:00Z",pakuttaLCs:["HI - 一橋大学委員会","WA - 早稲田大学委員会","TO - 東京大学委員会","OS - 大阪大学委員会"]},
@@ -559,11 +633,17 @@ function init(){
 }
 
 function populateLCSelects(){
-  ["f-lc","p-lc","ff-lc"].forEach(id=>{
+  ["f-lc","p-lc","ff-lc","fu-lc","mylc-select"].forEach(id=>{
     const s=document.getElementById(id);if(!s)return;
     const f=s.options[0];s.innerHTML="";s.appendChild(f);
     LC_LIST.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l;s.appendChild(o)});
   });
+  // LC別フィルタ選択肢
+  const lcSel=document.getElementById("lc-filter-select");
+  if(lcSel){
+    lcSel.innerHTML='<option value="">全LC</option>';
+    LC_LIST.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l.split(" - ")[0]+" - "+l.split(" - ")[1];lcSel.appendChild(o)});
+  }
 }
 
 function buildCatButtons(){
@@ -605,6 +685,16 @@ function updateStats(){
   document.getElementById("stat-pakuri").textContent=tp;
   const lcs=new Set([...strategies.map(s=>s.lc),...strategies.flatMap(s=>s.pakuttaLCs||[]),...failureCases.map(f=>f.lc)]);
   document.getElementById("stat-lcs").textContent=lcs.size;
+  // 自分のLCのポイント
+  if(myLC){
+    const myPt=(strategies.filter(s=>s.lc===myLC).length)+(failureCases.filter(f=>f.lc===myLC).length*3);
+    document.getElementById("stat-pts").textContent=myPt+"pt";
+    const code=myLC.split(" - ")[0];
+    document.getElementById("stat-mypt-label").textContent=code;
+  }else{
+    document.getElementById("stat-pts").textContent="設定";
+    document.getElementById("stat-mypt-label").textContent="自分のLC";
+  }
 }
 
 function setFilter(cat,btn){
@@ -617,6 +707,7 @@ function renderList(){
   const q=(document.querySelector(".search-input")||{}).value?.toLowerCase()||"";
   let items=[...strategies];
   if(currentFilter!=="all")items=items.filter(s=>s.category===currentFilter);
+  if(currentLCFilter)items=items.filter(s=>s.lc===currentLCFilter||(s.pakuttaLCs||[]).includes(currentLCFilter));
   if(q)items=items.filter(s=>s.name.toLowerCase().includes(q)||s.lc.toLowerCase().includes(q)||(s.description||"").toLowerCase().includes(q));
   if(currentSort==="popular")items.sort((a,b)=>(b.pakuttaLCs||[]).length-(a.pakuttaLCs||[]).length);
   else items.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
@@ -624,7 +715,9 @@ function renderList(){
   if(!items.length){el.innerHTML='<div class="empty-state"><p style="font-size:14px;color:#999">施策が見つかりません</p><p style="font-size:12px;margin-top:4px;color:#bbb">最初の施策を登録しよう</p></div>';return}
   el.innerHTML=items.map(s=>{
     const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"],n=(s.pakuttaLCs||[]).length,d=new Date(s.createdAt).toLocaleDateString("ja-JP");
-    return`<div class="card" onclick="openDetail('${s.id}')"><div class="card-top"><div style="flex:1"><div class="card-meta"><span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span><span class="lc-name">${esc(s.lc)}</span></div><h3>${esc(s.name)}</h3></div><div class="fire-badge ${n?'has':'empty'}"><div class="num">${n}</div><small>パクリ</small></div></div><p class="card-desc">${esc(s.description)}</p><div class="card-bottom"><span class="card-date">${d}</span><button class="btn-pakuri" onclick="event.stopPropagation();openPakuri('${s.id}')">パクる！</button></div></div>`;
+    const fups=s.followups||[];
+    const fupHtml=fups.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${fups.slice(-3).map(f=>`<span class="followup-chip ${f.result}">${f.lc.split(" - ")[0]}: ${f.result==='success'?'成功':f.result==='partial'?'一部成功':'失敗'}</span>`).join("")}</div>`:'';
+    return`<div class="card" onclick="openDetail('${s.id}')"><div class="card-top"><div style="flex:1"><div class="card-meta"><span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span><span class="lc-name">${esc(s.lc)}</span></div><h3>${esc(s.name)}</h3></div><div class="fire-badge ${n?'has':'empty'}"><div class="num">${n}</div><small>パクリ</small></div></div><p class="card-desc">${esc(s.description)}</p>${fupHtml}<div class="card-bottom"><span class="card-date">${d}</span><button class="btn-pakuri" onclick="event.stopPropagation();openPakuri('${s.id}')">パクる！</button></div></div>`;
   }).join("");
 }
 
@@ -673,16 +766,120 @@ async function submitPakuri(){
 function openDetail(id){
   const s=strategies.find(x=>x.id===id);if(!s)return;
   const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"],d=new Date(s.createdAt).toLocaleDateString("ja-JP"),p=s.pakuttaLCs||[];
+  const fups=s.followups||[];
   let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div style="flex:1"><span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span><h2 style="font-size:17px;font-weight:700;margin:8px 0 4px">${esc(s.name)}</h2><p style="font-size:12px;color:var(--text-sub)">${esc(s.lc)} · ${d}</p></div><button class="btn-close" onclick="closeDetail()">✕</button></div>`;
   h+=`<div class="detail-section"><h4>施策内容</h4><p>${esc(s.description)}</p></div>`;
   h+=`<div class="detail-section"><h4>成果</h4><p>${esc(s.result)}</p></div>`;
   if(s.link)h+=`<div class="detail-section"><h4>資料</h4><a href="${esc(s.link)}" target="_blank" style="font-size:13px;color:var(--aiesec-blue);word-break:break-all;font-weight:600">${esc(s.link)}</a></div>`;
-  h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:16px"><h4 style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">パクったLC (${p.length})</h4>${p.length===0?'<p style="font-size:13px;color:#aaa">まだ誰もパクってません。最初にパクろう！</p>':'<div class="pakuri-list">'+p.map(l=>`<span class="pakuri-chip">${l.split(" - ")[0]}</span>`).join("")+'</div>'}</div>`;
+  h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:12px"><h4 style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">パクったLC (${p.length})</h4>${p.length===0?'<p style="font-size:13px;color:#aaa">まだ誰もパクってません。最初にパクろう！</p>':'<div class="pakuri-list">'+p.map(l=>`<span class="pakuri-chip">${l.split(" - ")[0]}</span>`).join("")+'</div>'}</div>`;
+  // フォローアップ表示
+  if(fups.length){
+    const resultLabel={success:"うまくいった",partial:"一部成功",fail:"うまくいかなかった"};
+    h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <h4 style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">パクり結果報告 (${fups.length}件)</h4>
+      ${fups.map(f=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span class="followup-chip ${f.result}">${resultLabel[f.result]||f.result}</span>
+          <span style="font-size:12px;font-weight:600">${esc(f.lc.split(" - ")[0])}</span>
+          <span style="font-size:11px;color:#aaa">${new Date(f.createdAt).toLocaleDateString("ja-JP")}</span>
+        </div>
+        ${f.comment?`<p style="font-size:12px;color:#555;margin:0">${esc(f.comment)}</p>`:''}
+      </div>`).join("")}
+    </div>`;
+  }
   h+=`<button class="btn-submit" onclick="closeDetail();openPakuri('${s.id}')">この施策をパクる</button>`;
+  h+=`<button class="btn-delete" onclick="closeDetail();openFollowup('${s.id}')">パクり結果を報告する</button>`;
   document.getElementById("detail-content").innerHTML=h;
   document.getElementById("modal-detail").style.display="flex";
 }
 function closeDetail(){document.getElementById("modal-detail").style.display="none"}
+
+// ===== 自分のLC設定 =====
+function openMyLCSetting(){
+  const sel=document.getElementById("mylc-select");
+  if(myLC)sel.value=myLC;
+  document.getElementById("modal-mylc").style.display="flex";
+}
+function closeMyLCSetting(){document.getElementById("modal-mylc").style.display="none"}
+function saveMyLC(){
+  const val=document.getElementById("mylc-select").value;
+  if(!val){showToast("LCを選択してください");return}
+  myLC=val;
+  localStorage.setItem("pakuri_myLC",val);
+  closeMyLCSetting();
+  updateStats();
+  showToast(val.split(" - ")[0]+"のポイントを表示します");
+}
+function clearMyLC(){
+  myLC="";
+  localStorage.removeItem("pakuri_myLC");
+  closeMyLCSetting();
+  updateStats();
+}
+
+// ===== 類似施策サジェスト =====
+function onStrategyNameInput(val){
+  clearTimeout(suggestTimer);
+  if(val.length<4){document.getElementById("suggest-box").style.display="none";return}
+  suggestTimer=setTimeout(()=>{
+    const q=val.toLowerCase();
+    const similar=strategies.filter(s=>{
+      const name=s.name.toLowerCase();
+      // 部分一致 or 共通単語
+      if(name.includes(q)||q.includes(name))return true;
+      const words=q.split(/[\s　・]/);
+      return words.some(w=>w.length>=2&&name.includes(w));
+    }).slice(0,3);
+    const box=document.getElementById("suggest-box");
+    const list=document.getElementById("suggest-list");
+    if(!similar.length){box.style.display="none";return}
+    box.style.display="block";
+    list.innerHTML=similar.map(s=>{
+      const fups=s.followups||[];
+      const hasFailure=fups.some(f=>f.result==='fail');
+      const warn=hasFailure?`<span style="color:#c62828;font-size:10px;font-weight:700"> 失敗報告あり</span>`:'';
+      return`<div class="suggest-item" onclick="closeRegister();openDetail('${s.id}')">
+        <div class="s-name">${esc(s.name)}${warn}</div>
+        <div class="s-meta">${s.lc.split(" - ")[0]} · ${s.category} · ${(s.pakuttaLCs||[]).length}件パクり</div>
+      </div>`;
+    }).join("");
+  },300);
+}
+
+// ===== パクり結果フォローアップ =====
+function openFollowup(id){
+  followupTargetId=id;
+  followupResult=null;
+  const s=strategies.find(x=>x.id===id);
+  document.getElementById("followup-target-name").textContent=s?`「${s.name}」`:"";
+  document.getElementById("fu-lc").value="";
+  document.getElementById("fu-comment").value="";
+  document.querySelectorAll(".fu-result-btn").forEach(b=>b.className="fu-result-btn");
+  const btn=document.getElementById("btn-followup-submit");btn.disabled=false;btn.textContent="結果を投稿する";
+  document.getElementById("modal-followup").style.display="flex";
+}
+function closeFollowup(){document.getElementById("modal-followup").style.display="none";followupTargetId=null;followupResult=null}
+
+function selectFollowupResult(val){
+  followupResult=val;
+  document.querySelectorAll(".fu-result-btn").forEach(b=>{
+    b.className="fu-result-btn"+(b.dataset.val===val?` active-${val}`:"");
+  });
+}
+
+async function submitFollowup(){
+  const lc=document.getElementById("fu-lc").value;
+  const comment=document.getElementById("fu-comment").value.trim();
+  if(!lc){showToast("LCを選択してください");return}
+  if(!followupResult){showToast("結果を選択してください");return}
+  const btn=document.getElementById("btn-followup-submit");btn.disabled=true;btn.textContent="投稿中...";
+  try{
+    const s=strategies.find(x=>x.id===followupTargetId);if(!s)return;
+    const fups=[...(s.followups||[]),{lc,result:followupResult,comment,createdAt:new Date().toISOString()}];
+    await strategiesRef.doc(followupTargetId).update({followups:fups});
+    closeFollowup();showToast("結果を報告しました");
+  }catch(e){showToast("エラー: "+e.message);btn.disabled=false;btn.textContent="結果を投稿する"}
+}
 
 // ===== 失敗事例 =====
 function buildFailCatButtons(){
