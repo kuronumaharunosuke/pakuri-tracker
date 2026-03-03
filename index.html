@@ -132,6 +132,81 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--aiesec-b
 .kpi-fill{height:100%;border-radius:4px}
 .kpi-pct{font-size:11px;color:var(--text-sub);margin-top:2px}
 
+/* ===== FAILURE SECTION ===== */
+.failure-card{
+  background:var(--white);border-radius:var(--r);padding:16px;
+  border:1.5px solid #FFCDD2;cursor:pointer;margin-bottom:10px;
+  position:relative;
+}
+.failure-card:hover{border-color:#EF9A9A}
+.failure-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:#d32f2f;border-radius:var(--r) 0 0 var(--r);
+}
+.failure-tag{
+  padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;
+  background:#FFEBEE;color:#c62828;
+}
+.anon-tag{
+  padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;
+  background:#F3E5F5;color:#6A1B9A;
+}
+.pt-badge{
+  text-align:center;min-width:44px;margin-left:12px;
+}
+.pt-badge .num{font-family:'Lato',sans-serif;font-size:18px;font-weight:900;color:#d32f2f}
+.pt-badge small{font-size:9px;color:var(--text-sub);font-weight:600;display:block}
+
+.pt-score-card{
+  background:linear-gradient(135deg,#311B92,#4527A0);
+  color:#fff;border-radius:var(--r);padding:16px 20px;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:12px;
+}
+.pt-score-card .big{font-family:'Lato',sans-serif;font-size:32px;font-weight:900}
+.pt-score-card .lbl{font-size:11px;opacity:0.7;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+
+.ai-analysis-box{
+  background:#F8F9FA;border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-top:12px;
+}
+.ai-analysis-box .ai-label{
+  font-size:11px;font-weight:700;color:var(--aiesec-blue);
+  text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;
+}
+.ai-analysis-box p{font-size:13px;color:#444;line-height:1.8}
+.ai-pattern-item{
+  padding:10px 12px;background:#fff;border-radius:6px;
+  border-left:3px solid #d32f2f;margin-bottom:8px;
+  font-size:13px;color:#333;line-height:1.6;
+}
+.btn-ai{
+  width:100%;padding:12px;border-radius:var(--r);border:none;
+  background:linear-gradient(135deg,var(--aiesec-blue),var(--aiesec-teal));
+  color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px;
+}
+.btn-ai:hover{opacity:0.9}
+.btn-ai:disabled{opacity:0.5;cursor:not-allowed}
+.ai-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;vertical-align:middle}
+
+.failure-empty{text-align:center;padding:40px 20px;color:#aaa}
+.pts-explain{
+  background:#FFF8E1;border:1px solid #FFE082;border-radius:var(--r);
+  padding:12px 14px;margin-bottom:14px;font-size:12px;color:#5D4037;
+}
+.pts-explain strong{color:#E65100}
+.anon-check-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F3E5F5;border-radius:var(--r);margin-bottom:14px;cursor:pointer}
+.anon-check-row input{width:18px;height:18px;cursor:pointer;accent-color:#7B1FA2}
+.anon-check-row label{font-size:13px;font-weight:600;color:#4A148C;cursor:pointer}
+
+.admin-tab-btn{
+  padding:8px 16px;border-radius:6px;border:1.5px solid var(--border);
+  background:var(--white);font-size:13px;font-weight:600;cursor:pointer;color:var(--text-sub);
+  display:flex;align-items:center;
+}
+.admin-tab-btn.active{
+  background:var(--aiesec-blue);border-color:var(--aiesec-blue);color:#fff;
+}
 /* ===== SETTINGS ===== */
 .settings-btn{display:block;width:100%;padding:12px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;text-align:left;color:var(--text);margin-bottom:8px}
 .settings-btn:hover{background:var(--bg)}
@@ -249,7 +324,8 @@ textarea.form-input{resize:vertical}
   </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('list',this)">施策一覧</button>
-    <button class="tab-btn" onclick="switchTab('dashboard',this)">ダッシュボード</button>
+    <button class="tab-btn" onclick="switchTab('failure',this)">失敗から学ぶ</button>
+    <button class="tab-btn" onclick="switchTab('dashboard',this)">統計</button>
     <button class="tab-btn small" onclick="switchTab('settings',this)">設定</button>
   </div>
 </div>
@@ -276,6 +352,21 @@ textarea.form-input{resize:vertical}
     <div id="card-list"><div class="loading"><div class="spinner"></div><p>読み込み中...</p></div></div>
   </div>
   <div id="tab-dashboard" style="display:none"></div>
+  <div id="tab-failure" style="display:none">
+    <div class="pts-explain">
+      失敗事例は<strong>成功事例の3倍のポイント</strong>が入ります。匿名投稿可能。AIが蓄積データからパターンを自動分析します。
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:17px;font-weight:700">失敗事例一覧</span>
+      <button class="btn-add" style="background:var(--aiesec-red)" onclick="openFailureRegister()">＋ 失敗を投稿</button>
+    </div>
+    <div id="failure-list"><div class="loading"><div class="spinner"></div><p>読み込み中...</p></div></div>
+    <button class="btn-ai" id="btn-ai-analyze" onclick="runAIAnalysis()">AIで失敗パターンを分析する</button>
+    <div id="ai-result" style="display:none" class="ai-analysis-box">
+      <div class="ai-label">AI 失敗パターン分析</div>
+      <div id="ai-result-body"></div>
+    </div>
+  </div>
   <div id="tab-settings" style="display:none">
     <h2 class="section-title">設定</h2>
     <div class="dash-section" style="display:flex;flex-direction:column;gap:0">
@@ -355,11 +446,46 @@ textarea.form-input{resize:vertical}
         <span class="admin-tag">Admin</span>
         <button class="btn-close" onclick="closeAdmin()">✕</button>
       </div>
-      <div id="admin-pending-list">
-        <div class="loading"><div class="spinner"></div><p>読み込み中...</p></div>
+      <div style="display:flex;gap:6px;margin-bottom:16px">
+        <button id="atab-pending" class="admin-tab-btn active" onclick="switchAdminTab('pending')">
+          承認待ち
+          <span id="atab-pending-badge" style="display:none;background:var(--aiesec-red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span>
+        </button>
+        <button id="atab-delete" class="admin-tab-btn" onclick="switchAdminTab('delete')">公開済みを削除</button>
       </div>
+      <div id="admin-pending-list"></div>
+      <div id="admin-delete-list" style="display:none"></div>
     </div>
   </div>
+</div>
+
+<!-- 失敗事例登録 -->
+<div id="modal-failure" class="overlay" style="display:none" onclick="closeFailureRegister()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-top">
+      <h2 style="color:#c62828">失敗事例を投稿する</h2>
+      <button class="btn-close" onclick="closeFailureRegister()">✕</button>
+    </div>
+    <div class="anon-check-row" onclick="document.getElementById('f-anon').click()">
+      <input type="checkbox" id="f-anon">
+      <label for="f-anon">匿名で投稿する（LC名が「匿名LC」として表示されます）</label>
+    </div>
+    <div class="form-group"><label>失敗した施策名 *</label><input id="ff-name" class="form-input" placeholder="例: 新入生向けセミナー施策"></div>
+    <div id="ff-lc-group" class="form-group"><label>あなたのLC *</label><select id="ff-lc" class="form-input"><option value="">選択してください</option></select></div>
+    <div class="form-group"><label>カテゴリ *</label><div class="cat-btns" id="ff-cat-btns"></div></div>
+    <div class="form-group"><label>何をした？（施策の概要）*</label><textarea id="ff-desc" class="form-input" rows="3" placeholder="どんな施策をしたか具体的に"></textarea></div>
+    <div class="form-group"><label>何が起きた？（失敗の内容）*</label><textarea id="ff-fail" class="form-input" rows="3" placeholder="何がうまくいかなかったか、どんな結果になったか"></textarea></div>
+    <div class="form-group"><label>なぜ失敗したと思う？（任意）</label><textarea id="ff-why" class="form-input" rows="2" placeholder="原因の仮説があれば"></textarea></div>
+    <div style="background:#FFF3E0;border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#BF360C">
+      投稿後、管理者が確認してから公開されます。匿名の場合もLC名はデータとして保持されます（管理者のみ閲覧可）。
+    </div>
+    <button class="btn-submit" style="background:#d32f2f" id="btn-failure-submit" onclick="submitFailure()">投稿する（失敗事例・3pt）</button>
+  </div>
+</div>
+
+<!-- 失敗詳細 -->
+<div id="modal-failure-detail" class="overlay" style="display:none" onclick="closeFailureDetail()">
+  <div class="modal" onclick="event.stopPropagation()"><div id="failure-detail-content"></div></div>
 </div>
 
 <!-- Firebase SDK -->
@@ -378,6 +504,8 @@ firebase.initializeApp({
 const db=firebase.firestore();
 const strategiesRef=db.collection("strategies");
 const pendingRef=db.collection("pending_strategies");
+const failureRef=db.collection("failure_cases");
+const pendingFailureRef=db.collection("pending_failures");
 
 const ADMIN_PASSWORD="PnF";
 const CATEGORIES=["採用","育成","Planning","チームビルディング","その他"];
@@ -390,7 +518,9 @@ const CAT_COLORS={
   "その他":{bg:"#ECEFF1",text:"#37474F",border:"#B0BEC5",fill:"var(--aiesec-gray)"}
 };
 
-let strategies=[],pendingItems=[],currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null;
+let strategies=[],pendingItems=[],failureCases=[],pendingFailures=[];
+let currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null;
+let currentFailCat="採用";
 let isAdminLoggedIn=false;
 
 const SAMPLE=[
@@ -404,21 +534,34 @@ const SAMPLE=[
 function init(){
   populateLCSelects();
   buildCatButtons();
-  // 承認済み施策をリアルタイム取得
+  buildFailCatButtons();
+  // 承認済み施策
   strategiesRef.onSnapshot(snap=>{
     strategies=snap.docs.map(d=>({id:d.id,...d.data()}));
     updateStats();renderList();
   },err=>console.error(err));
-  // 承認待ちをリアルタイム取得（バッジ更新）
+  // 承認待ち施策
   pendingRef.onSnapshot(snap=>{
     pendingItems=snap.docs.map(d=>({id:d.id,...d.data()}));
+    updatePendingBadge();
+  },err=>console.error(err));
+  // 承認済み失敗事例
+  failureRef.onSnapshot(snap=>{
+    failureCases=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderFailureList();
+    updateStats();
+  },err=>console.error(err));
+  // 承認待ち失敗事例
+  pendingFailureRef.onSnapshot(snap=>{
+    pendingFailures=snap.docs.map(d=>({id:d.id,...d.data()}));
     updatePendingBadge();
   },err=>console.error(err));
 }
 
 function populateLCSelects(){
-  ["f-lc","p-lc"].forEach(id=>{
-    const s=document.getElementById(id),f=s.options[0];s.innerHTML="";s.appendChild(f);
+  ["f-lc","p-lc","ff-lc"].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
+    const f=s.options[0];s.innerHTML="";s.appendChild(f);
     LC_LIST.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l;s.appendChild(o)});
   });
 }
@@ -438,7 +581,7 @@ function updateCatBtnStyles(){
 }
 
 function updatePendingBadge(){
-  const n=pendingItems.length;
+  const n=pendingItems.length+pendingFailures.length;
   const badge=document.getElementById("admin-badge");
   if(n>0){badge.style.display="flex";badge.textContent=n}
   else{badge.style.display="none"}
@@ -451,15 +594,16 @@ function showToast(m){
 
 function switchTab(tab,btn){
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");
-  ["list","dashboard","settings"].forEach(t=>document.getElementById("tab-"+t).style.display=t===tab?"":"none");
+  ["list","dashboard","settings","failure"].forEach(t=>document.getElementById("tab-"+t).style.display=t===tab?"":"none");
   if(tab==="dashboard")renderDashboard();
+  if(tab==="failure")renderFailureList();
 }
 
 function updateStats(){
   document.getElementById("stat-total").textContent=strategies.length;
   const tp=strategies.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0);
   document.getElementById("stat-pakuri").textContent=tp;
-  const lcs=new Set([...strategies.map(s=>s.lc),...strategies.flatMap(s=>s.pakuttaLCs||[])]);
+  const lcs=new Set([...strategies.map(s=>s.lc),...strategies.flatMap(s=>s.pakuttaLCs||[]),...failureCases.map(f=>f.lc)]);
   document.getElementById("stat-lcs").textContent=lcs.size;
 }
 
@@ -535,11 +679,163 @@ function openDetail(id){
   if(s.link)h+=`<div class="detail-section"><h4>資料</h4><a href="${esc(s.link)}" target="_blank" style="font-size:13px;color:var(--aiesec-blue);word-break:break-all;font-weight:600">${esc(s.link)}</a></div>`;
   h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:16px"><h4 style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">パクったLC (${p.length})</h4>${p.length===0?'<p style="font-size:13px;color:#aaa">まだ誰もパクってません。最初にパクろう！</p>':'<div class="pakuri-list">'+p.map(l=>`<span class="pakuri-chip">${l.split(" - ")[0]}</span>`).join("")+'</div>'}</div>`;
   h+=`<button class="btn-submit" onclick="closeDetail();openPakuri('${s.id}')">この施策をパクる</button>`;
-  h+=`<button class="btn-delete" onclick="confirmDelete('${s.id}')">この施策を削除する</button>`;
   document.getElementById("detail-content").innerHTML=h;
   document.getElementById("modal-detail").style.display="flex";
 }
 function closeDetail(){document.getElementById("modal-detail").style.display="none"}
+
+// ===== 失敗事例 =====
+function buildFailCatButtons(){
+  const c=document.getElementById("ff-cat-btns");if(!c)return;c.innerHTML="";
+  CATEGORIES.forEach(cat=>{const b=document.createElement("button");b.type="button";b.className="cat-btn";b.textContent=cat;b.onclick=()=>{currentFailCat=cat;updateFailCatBtnStyles()};c.appendChild(b)});
+  updateFailCatBtnStyles();
+}
+function updateFailCatBtnStyles(){
+  document.querySelectorAll("#ff-cat-btns .cat-btn").forEach(b=>{
+    const c=b.textContent,cc=CAT_COLORS[c];
+    if(c===currentFailCat){b.style.borderColor=cc.border;b.style.background=cc.bg;b.style.color=cc.text}
+    else{b.style.borderColor="var(--border)";b.style.background="var(--white)";b.style.color="#aaa"}
+  });
+}
+
+function openFailureRegister(){
+  ["ff-name","ff-desc","ff-fail","ff-why"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("ff-lc").value="";
+  document.getElementById("f-anon").checked=false;
+  currentFailCat="採用";updateFailCatBtnStyles();
+  const btn=document.getElementById("btn-failure-submit");btn.disabled=false;btn.textContent="投稿する（失敗事例・3pt）";
+  document.getElementById("modal-failure").style.display="flex";
+}
+function closeFailureRegister(){document.getElementById("modal-failure").style.display="none"}
+
+async function submitFailure(){
+  const name=document.getElementById("ff-name").value.trim();
+  const lc=document.getElementById("ff-lc").value;
+  const desc=document.getElementById("ff-desc").value.trim();
+  const fail=document.getElementById("ff-fail").value.trim();
+  const why=document.getElementById("ff-why").value.trim();
+  const anon=document.getElementById("f-anon").checked;
+  if(!name||!lc||!desc||!fail){showToast("必須項目を入力してください");return}
+  const btn=document.getElementById("btn-failure-submit");btn.disabled=true;btn.textContent="投稿中...";
+  try{
+    await pendingFailureRef.add({
+      name,lc,category:currentFailCat,description:desc,
+      failureDetail:fail,whyFailed:why,
+      anonymous:anon,displayLc:anon?"匿名LC":lc,
+      points:3,createdAt:new Date().toISOString(),submittedAt:new Date().toISOString()
+    });
+    closeFailureRegister();
+    showToast("投稿しました。承認後に公開されます");
+  }catch(e){showToast("エラー: "+e.message);btn.disabled=false;btn.textContent="投稿する（失敗事例・3pt）"}
+}
+
+function renderFailureList(){
+  const el=document.getElementById("failure-list");if(!el)return;
+  if(!failureCases.length){
+    el.innerHTML='<div class="failure-empty"><p style="font-size:14px;font-weight:700;color:#c62828">失敗事例はまだありません</p><p style="font-size:12px;margin-top:4px">あなたの失敗が、誰かの成功につながります</p></div>';
+    return;
+  }
+  const sorted=[...failureCases].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  el.innerHTML=sorted.map(f=>{
+    const cc=CAT_COLORS[f.category]||CAT_COLORS["その他"];
+    const d=new Date(f.createdAt).toLocaleDateString("ja-JP");
+    const display=f.displayLc||f.lc;
+    return`<div class="failure-card" onclick="openFailureDetail('${f.id}')">
+      <div class="card-top">
+        <div style="flex:1">
+          <div class="card-meta">
+            <span class="failure-tag">${f.category}</span>
+            ${f.anonymous?'<span class="anon-tag">匿名</span>':''}
+            <span class="lc-name">${esc(display)}</span>
+          </div>
+          <h3>${esc(f.name)}</h3>
+        </div>
+        <div class="pt-badge"><div class="num">+3</div><small>pt</small></div>
+      </div>
+      <p class="card-desc">${esc(f.failureDetail)}</p>
+      <div class="card-bottom"><span class="card-date">${d}</span></div>
+    </div>`;
+  }).join("");
+}
+
+function openFailureDetail(id){
+  const f=failureCases.find(x=>x.id===id);if(!f)return;
+  const cc=CAT_COLORS[f.category]||CAT_COLORS["その他"];
+  const d=new Date(f.createdAt).toLocaleDateString("ja-JP");
+  const display=f.displayLc||f.lc;
+  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+    <div style="flex:1">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <span class="failure-tag">${f.category}</span>
+        ${f.anonymous?'<span class="anon-tag">匿名投稿</span>':''}
+      </div>
+      <h2 style="font-size:17px;font-weight:700;margin-bottom:4px">${esc(f.name)}</h2>
+      <p style="font-size:12px;color:var(--text-sub)">${esc(display)} · ${d}</p>
+    </div>
+    <button class="btn-close" onclick="closeFailureDetail()">✕</button>
+  </div>`;
+  h+=`<div class="detail-section"><h4>施策概要</h4><p>${esc(f.description)}</p></div>`;
+  h+=`<div class="detail-section"><h4>何が起きたか（失敗内容）</h4><p style="color:#c62828">${esc(f.failureDetail)}</p></div>`;
+  if(f.whyFailed)h+=`<div class="detail-section"><h4>原因の仮説</h4><p>${esc(f.whyFailed)}</p></div>`;
+  h+=`<div style="background:#FFEBEE;border-radius:var(--r);padding:12px 16px;font-size:13px;color:#c62828;font-weight:600;text-align:center;margin-top:4px">この失敗事例を提供してくれたLCに感謝</div>`;
+  document.getElementById("failure-detail-content").innerHTML=h;
+  document.getElementById("modal-failure-detail").style.display="flex";
+}
+function closeFailureDetail(){document.getElementById("modal-failure-detail").style.display="none"}
+
+// ===== AI 失敗パターン分析 =====
+async function runAIAnalysis(){
+  if(!failureCases.length){showToast("失敗事例がまだありません");return}
+  const btn=document.getElementById("btn-ai-analyze");
+  btn.disabled=true;
+  btn.innerHTML='<span class="ai-spinner"></span>AIが分析中...';
+  const resultBox=document.getElementById("ai-result");
+  const resultBody=document.getElementById("ai-result-body");
+  resultBox.style.display="block";
+  resultBody.innerHTML='<p style="color:#aaa;font-size:13px">分析中です。少々お待ちください...</p>';
+
+  const caseSummary=failureCases.map((f,i)=>
+    `[事例${i+1}] カテゴリ:${f.category} / 施策:${f.name} / 失敗内容:${f.failureDetail} / 原因仮説:${f.whyFailed||"未記入"}`
+  ).join("\n");
+
+  const prompt=`あなたはAIESEC Japanの組織分析AIです。以下はAIESECの各LC（地域委員会）から集まった失敗事例データです。
+
+【失敗事例データ】
+${caseSummary}
+
+以下の分析を日本語で行ってください：
+1. 繰り返し起きている失敗パターンを3〜5つ抽出する
+2. カテゴリ別の傾向を分析する
+3. 「このパターンに注意」という具体的な提言を行う
+
+回答はシンプルに、各パターンを箇条書き形式で。冒頭の挨拶不要。`;
+
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user",content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.[0]?.text||"分析結果を取得できませんでした";
+    // パターンを見やすく表示
+    const lines=text.split("\n").filter(l=>l.trim());
+    resultBody.innerHTML=lines.map(l=>{
+      const trimmed=l.trim();
+      if(trimmed.match(/^[0-9・\-\*▶]/)||trimmed.startsWith("##")){
+        return`<div class="ai-pattern-item">${esc(trimmed.replace(/^[#\*\-・▶\s]+/,""))}</div>`;
+      }
+      return`<p style="font-size:13px;color:#555;margin-bottom:6px">${esc(trimmed)}</p>`;
+    }).join("");
+  }catch(e){
+    resultBody.innerHTML=`<p style="color:#d32f2f;font-size:13px">分析エラー: ${e.message}</p>`;
+  }
+  btn.disabled=false;btn.textContent="AIで失敗パターンを再分析する";
+}
 
 // ===== 管理者ログイン =====
 function openAdminLogin(){
@@ -577,36 +873,99 @@ function closeAdmin(){
   isAdminLoggedIn=false;
 }
 
+function switchAdminTab(tab){
+  document.getElementById("atab-pending").classList.toggle("active",tab==="pending");
+  document.getElementById("atab-delete").classList.toggle("active",tab==="delete");
+  document.getElementById("admin-pending-list").style.display=tab==="pending"?"":"none";
+  document.getElementById("admin-delete-list").style.display=tab==="delete"?"":"none";
+}
+
 function renderAdminPanel(){
+  renderAdminPending();
+  renderAdminDelete();
+}
+
+function renderAdminPending(){
   const el=document.getElementById("admin-pending-list");
-  if(!pendingItems.length){
-    el.innerHTML=`<div class="no-pending"><p style="font-size:14px;font-weight:700;color:#555">承認待ちの施策はありません</p><p style="font-size:12px;margin-top:4px">新しい投稿が来るとここに表示されます</p></div>`;
+  const allPending=[
+    ...pendingItems.map(x=>({...x,_type:"success"})),
+    ...pendingFailures.map(x=>({...x,_type:"failure"}))
+  ].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+
+  // バッジ更新
+  const badge=document.getElementById("atab-pending-badge");
+  if(allPending.length){badge.style.display="inline";badge.textContent=allPending.length}
+  else badge.style.display="none";
+
+  if(!allPending.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px 20px;color:#aaa"><p style="font-size:14px;font-weight:700">承認待ちの投稿はありません</p><p style="font-size:12px;margin-top:4px">新しい投稿が来るとここに表示されます</p></div>`;
     return;
   }
-  el.innerHTML=`<p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;font-weight:600">承認待ち: ${pendingItems.length}件</p>`
-    +pendingItems.map(s=>{
+  el.innerHTML=`<p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">合計 ${allPending.length}件（成功 ${pendingItems.length} / 失敗 ${pendingFailures.length}）</p>`
+    +allPending.map(s=>{
       const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"];
       const sub=s.submittedAt?new Date(s.submittedAt).toLocaleString("ja-JP"):"";
-      return`<div class="pending-card">
-        <div class="pending-card-top">
-          <div style="flex:1">
-            <div class="pending-meta">
-              <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span>
-              <span>${esc(s.lc)}</span>
-            </div>
-            <div class="pending-name">${esc(s.name)}</div>
-            ${sub?`<div style="font-size:11px;color:#aaa;margin-top:3px">投稿: ${sub}</div>`:''}
+      const isFailure=s._type==="failure";
+      const borderColor=isFailure?"#FFCDD2":"#FFE0B2";
+      const typeLabel=isFailure
+        ?'<span style="background:#FFEBEE;color:#c62828;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px">失敗事例</span>'
+        :'<span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px">成功事例</span>';
+      return`<div class="pending-card" style="border-color:${borderColor}">
+        <div class="pending-card-top"><div style="flex:1">
+          <div class="pending-meta">
+            <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span>
+            ${typeLabel}<span>${esc(s.displayLc||s.lc)}</span>
           </div>
-        </div>
-        <div class="pending-body">${esc(s.description)}</div>
-        <div class="pending-result"><strong style="font-size:11px;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.5px">成果:</strong><br>${esc(s.result)}</div>
+          <div class="pending-name">${esc(s.name)}</div>
+          ${sub?`<div style="font-size:11px;color:#aaa;margin-top:3px">投稿: ${sub}</div>`:''}
+        </div></div>
+        <div class="pending-body">${esc(isFailure?s.failureDetail:s.description)}</div>
+        ${isFailure&&s.whyFailed?`<div class="pending-result"><strong style="font-size:11px;color:var(--text-sub)">原因仮説:</strong><br>${esc(s.whyFailed)}</div>`:''}
+        ${!isFailure?`<div class="pending-result"><strong style="font-size:11px;color:var(--text-sub)">成果:</strong><br>${esc(s.result)}</div>`:''}
         ${s.link?`<div style="font-size:12px;margin-bottom:10px"><a href="${esc(s.link)}" target="_blank" style="color:var(--aiesec-blue);font-weight:600">資料リンク</a></div>`:''}
         <div class="pending-actions">
-          <button class="btn-reject" onclick="rejectPending('${s.id}')">却下</button>
-          <button class="btn-approve" onclick="approvePending('${s.id}')">承認して公開</button>
+          <button class="btn-reject" onclick="${isFailure?'rejectFailure':'rejectPending'}('${s.id}')">却下</button>
+          <button class="btn-approve" onclick="${isFailure?'approveFailure':'approvePending'}('${s.id}')">承認して公開</button>
         </div>
       </div>`;
     }).join("");
+}
+
+function renderAdminDelete(){
+  const el=document.getElementById("admin-delete-list");
+  let html="";
+
+  html+=`<p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">公開済み施策（${strategies.length}件）</p>`;
+  if(!strategies.length){
+    html+=`<div style="text-align:center;padding:16px;color:#aaa;font-size:13px;background:var(--bg);border-radius:var(--r);margin-bottom:16px">公開済みの施策はありません</div>`;
+  }else{
+    html+=[...strategies].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(s=>{
+      const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"];
+      return`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px">
+        <span class="cat-tag" style="background:${cc.bg};color:${cc.text};flex-shrink:0">${s.category}</span>
+        <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
+        <span style="font-size:11px;color:#aaa;flex-shrink:0">${s.lc.split(" - ")[0]}</span>
+        <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteStrategy('${s.id}')">削除</button>
+      </div>`;
+    }).join("");
+  }
+
+  html+=`<div style="border-top:1px solid var(--border);margin:16px 0 12px"></div>`;
+  html+=`<p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">公開済み失敗事例（${failureCases.length}件）</p>`;
+  if(!failureCases.length){
+    html+=`<div style="text-align:center;padding:16px;color:#aaa;font-size:13px;background:var(--bg);border-radius:var(--r)">公開済みの失敗事例はありません</div>`;
+  }else{
+    html+=[...failureCases].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(f=>{
+      return`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--white);border:1.5px solid #FFCDD2;border-radius:var(--r);margin-bottom:6px">
+        <span class="failure-tag" style="flex-shrink:0">${f.category}</span>
+        <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+        <span style="font-size:11px;color:#aaa;flex-shrink:0">${(f.displayLc||f.lc).split(" - ")[0]}</span>
+        <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteFailureCase('${f.id}')">削除</button>
+      </div>`;
+    }).join("");
+  }
+
+  el.innerHTML=html;
 }
 
 async function approvePending(id){
@@ -619,6 +978,26 @@ async function approvePending(id){
     showToast("承認しました。公開されました");
     renderAdminPanel();
   }catch(e){console.error(e);showToast("エラーが発生しました")}
+}
+
+async function approveFailure(id){
+  const s=pendingFailures.find(x=>x.id===id);if(!s)return;
+  if(!confirm(`「${s.name}」（失敗事例）を承認して公開しますか？`))return;
+  try{
+    const {id:_,...data}=s;
+    await failureRef.add({...data,approvedAt:new Date().toISOString()});
+    await pendingFailureRef.doc(id).delete();
+    showToast("失敗事例を承認しました");renderAdminPanel();
+  }catch(e){console.error(e);showToast("エラー: "+e.message)}
+}
+
+async function rejectFailure(id){
+  const s=pendingFailures.find(x=>x.id===id);if(!s)return;
+  if(!confirm(`「${s.name}」（失敗事例）を却下しますか？`))return;
+  try{
+    await pendingFailureRef.doc(id).delete();
+    showToast("却下しました");renderAdminPanel();
+  }catch(e){console.error(e);showToast("エラー: "+e.message)}
 }
 
 async function rejectPending(id){
@@ -639,9 +1018,28 @@ function renderDashboard(){
   const maxP=Math.max(...Object.values(catStats).map(s=>s.pakuri),1);
   const lcP={},lcR={};
   strategies.forEach(s=>{lcR[s.lc]=(lcR[s.lc]||0)+1;(s.pakuttaLCs||[]).forEach(l=>{lcP[l]=(lcP[l]||0)+1})});
+
+  // ポイント集計（成功1pt、失敗3pt）
+  const lcPts={};
+  strategies.forEach(s=>{lcPts[s.lc]=(lcPts[s.lc]||0)+1});
+  failureCases.forEach(f=>{if(f.lc)lcPts[f.lc]=(lcPts[f.lc]||0)+3});
+  const topPts=Object.entries(lcPts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const totalPts=Object.values(lcPts).reduce((s,v)=>s+v,0);
+
   const tP=Object.entries(lcP).sort((a,b)=>b[1]-a[1]).slice(0,5),tR=Object.entries(lcR).sort((a,b)=>b[1]-a[1]).slice(0,5);
   let h='<h2 class="section-title">ダッシュボード</h2>';
   if(top)h+=`<div class="top-card"><div class="label">Most Popular</div><div class="name">${esc(top.name)}</div><div class="meta">${esc(top.lc)} · ${(top.pakuttaLCs||[]).length} LCがパクった</div></div>`;
+
+  // ポイントランキング
+  h+=`<div class="pt-score-card"><div><div class="lbl">総獲得ポイント</div><div class="big">${totalPts} pt</div><div style="font-size:11px;opacity:0.6;margin-top:2px">成功事例 1pt · 失敗事例 3pt</div></div><div style="text-align:right"><div style="font-size:11px;opacity:0.7">失敗事例数</div><div style="font-family:Lato;font-size:24px;font-weight:900">${failureCases.length}</div></div></div>`;
+  h+='<div class="dash-section"><h3>ポイントランキング TOP5</h3>';
+  if(!topPts.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
+  else topPts.forEach(([l,n],i)=>{
+    const ptColor=i===0?"var(--aiesec-blue)":"#555";
+    h+=`<div class="rank-item"><span>${i+1}. ${l.split(" - ")[0]}</span><span style="font-weight:700;color:${ptColor}">${n} pt</span></div>`;
+  });
+  h+='</div>';
+
   h+='<div class="dash-section"><h3>カテゴリ別</h3>';
   CATEGORIES.forEach(c=>{const cc=CAT_COLORS[c],st=catStats[c];h+=`<div class="bar-row"><div class="bar-header"><span style="font-weight:600;color:${cc.text}">${c}</span><span style="color:var(--text-sub)">${st.count}施策 · ${st.pakuri}パクリ</span></div><div class="bar-track"><div class="bar-fill" style="width:${(st.pakuri/maxP)*100}%;background:${cc.fill}"></div></div></div>`});
   h+='</div><div class="grid-2"><div class="dash-section"><h3>パクリ王 TOP5</h3>';
@@ -651,7 +1049,7 @@ function renderDashboard(){
   if(!tR.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
   else tR.forEach(([l,n],i)=>{h+=`<div class="rank-item"><span>${i+1}. ${l.split(" - ")[0]}</span><span style="font-weight:700;color:var(--aiesec-teal)">${n}</span></div>`});
   h+='</div></div><div class="dash-section"><h3>KPI進捗</h3>';
-  [{label:"施策登録数",cur:strategies.length,tar:100,col:"var(--aiesec-teal)"},{label:"パクリ実装数",cur:tp,tar:300,col:"var(--aiesec-blue)"}].forEach(k=>{
+  [{label:"施策登録数",cur:strategies.length,tar:100,col:"var(--aiesec-teal)"},{label:"パクリ実装数",cur:tp,tar:300,col:"var(--aiesec-blue)"},{label:"失敗事例数",cur:failureCases.length,tar:50,col:"#d32f2f"}].forEach(k=>{
     const p=Math.round((k.cur/k.tar)*100);
     h+=`<div class="kpi-row"><div class="kpi-header"><span class="label">${k.label}</span><span style="color:${k.col};font-weight:700">${k.cur} / ${k.tar}</span></div><div class="kpi-track"><div class="kpi-fill" style="width:${Math.min(p,100)}%;background:${k.col}"></div></div><div class="kpi-pct">達成率: ${p}%</div></div>`;
   });
@@ -675,11 +1073,23 @@ async function loadSampleData(){
   }catch(e){console.error(e);showToast("エラーが発生しました")}
 }
 
-async function confirmDelete(id){
+async function deleteStrategy(id){
   const s=strategies.find(x=>x.id===id);if(!s)return;
   if(!confirm(`「${s.name}」を削除しますか？\nこの操作は取り消せません。`))return;
   try{
-    await strategiesRef.doc(id).delete();closeDetail();showToast("施策を削除しました");
+    await strategiesRef.doc(id).delete();
+    showToast("施策を削除しました");
+    renderAdminPanel();
+  }catch(e){console.error(e);showToast("削除に失敗しました")}
+}
+
+async function deleteFailureCase(id){
+  const f=failureCases.find(x=>x.id===id);if(!f)return;
+  if(!confirm(`「${f.name}」（失敗事例）を削除しますか？\nこの操作は取り消せません。`))return;
+  try{
+    await failureRef.doc(id).delete();
+    showToast("失敗事例を削除しました");
+    renderAdminPanel();
   }catch(e){console.error(e);showToast("削除に失敗しました")}
 }
 
