@@ -928,7 +928,7 @@ async function submitRegister(){
   if(!chkOk){showToast("投稿前チェックの必須項目を全てチェックしてください");return}
   const btn=document.getElementById("btn-register-submit");btn.disabled=true;btn.textContent="投稿中...";
   try{
-    await pendingRef.add({name,lc,category:currentCat,description:desc,result,link,term,areas:selectedAreas,createdAt:new Date().toISOString(),pakuttaLCs:[],submittedAt:new Date().toISOString()});
+    await pendingRef.add({name,lc,category:currentCat,description:desc,result,link,term,areas:selectedAreas,createdAt:new Date().toISOString(),pakuttaLCs:[],submittedAt:new Date().toISOString(),submittedBy:auth.currentUser?.email||""});
     closeRegister();
     // 承認待ちバナーを一時表示
     const banner=document.getElementById("pending-banner");
@@ -1110,7 +1110,7 @@ async function submitFailure(){
       name,lc,category:currentFailCat,description:desc,
       failureDetail:fail,whyFailed:why,
       anonymous:anon,displayLc:anon?"匿名LC":lc,
-      points:3,createdAt:new Date().toISOString(),submittedAt:new Date().toISOString()
+      points:3,createdAt:new Date().toISOString(),submittedAt:new Date().toISOString(),submittedBy:auth.currentUser?.email||""
     });
     closeFailureRegister();
     showToast("投稿しました。承認後に公開されます");
