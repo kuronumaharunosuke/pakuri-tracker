@@ -84,11 +84,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--aiesec-b
 .content{padding:16px 20px 100px}
 .search-input{width:100%;padding:10px 14px;border-radius:var(--r);border:1px solid var(--border);font-size:14px;background:var(--white);color:var(--text);margin-bottom:10px}
 .search-input::placeholder{color:#aaa}
-.filter-row{display:flex;gap:0;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
-.filter-btn{padding:8px 14px;border:none;background:none;color:var(--text-sub);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.filter-row{display:flex;flex-wrap:wrap;gap:0;align-items:center;margin-bottom:0;border-bottom:1px solid var(--border);padding-bottom:0}.filter-btn{padding:8px 14px;border:none;background:none;color:var(--text-sub);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .filter-btn:hover{color:var(--text)}
 .filter-btn.active{color:var(--aiesec-blue);border-bottom-color:var(--aiesec-blue)}
-.sort-select{padding:6px 10px;border-radius:var(--r);border:1px solid var(--border);font-size:12px;font-weight:600;background:var(--white);cursor:pointer;margin-left:auto;color:var(--text)}
+.sort-select{padding:6px 10px;border-radius:var(--r);border:1px solid var(--border);font-size:12px;font-weight:600;background:var(--white);cursor:pointer;color:var(--text)}
 
 /* ===== CARDS ===== */
 .card{background:var(--white);border-radius:var(--r);padding:16px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px}
@@ -405,30 +404,31 @@ textarea.form-input{resize:vertical}
       <div>あなたの施策は<strong>承認待ち</strong>です。管理者が確認後に公開されます。</div>
     </div>
     <input type="text" class="search-input" placeholder="施策名・LC名で検索..." oninput="renderList()">
-    <div class="filter-row">
-      <button class="filter-btn active" onclick="setFilter('all',this)">全て</button>
-      <button class="filter-btn" onclick="setFilter('採用',this)">採用</button>
-      <button class="filter-btn" onclick="setFilter('育成',this)">育成</button>
-      <button class="filter-btn" onclick="setFilter('Planning',this)">Planning</button>
-      <button class="filter-btn" onclick="setFilter('チームビルディング',this)">TB</button>
-      <button class="filter-btn" onclick="setFilter('その他',this)">その他</button>
-      <select class="sort-select" id="lc-filter-select" onchange="currentLCFilter=this.value;renderList()">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border)">
+      <select class="sort-select" id="cat-filter-select" style="flex:1;min-width:100px" onchange="currentFilter=this.value;renderList()">
+        <option value="">全カテゴリ</option>
+        <option value="採用">採用</option>
+        <option value="育成">育成</option>
+        <option value="Planning">Planning</option>
+        <option value="チームビルディング">チームビルディング</option>
+        <option value="その他">その他</option>
+      </select>
+      <select class="sort-select" id="area-filter-select" style="flex:1;min-width:100px" onchange="currentAreaFilter=this.value;renderList()">
+        <option value="">全エリア</option>
+        <option value="OGX">OGX</option>
+        <option value="ICX">ICX</option>
+        <option value="BD">BD</option>
+        <option value="TM">TM</option>
+        <option value="F">F</option>
+        <option value="Mkt">Mkt</option>
+      </select>
+      <select class="sort-select" id="lc-filter-select" style="flex:1;min-width:100px" onchange="currentLCFilter=this.value;renderList()">
         <option value="">全LC</option>
       </select>
-      <select class="sort-select" id="term-filter-select" onchange="currentTermFilter=this.value;renderList()">
+      <select class="sort-select" id="term-filter-select" style="flex:1;min-width:100px" onchange="currentTermFilter=this.value;renderList()">
         <option value="">全Term</option>
       </select>
-    </div>
-    <div class="filter-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
-      <span style="font-size:11px;color:var(--text-sub);font-weight:600;padding:4px 2px">エリア:</span>
-      <button class="filter-btn area-filter active" data-area="all" onclick="setAreaFilter('all',this)">すべて</button>
-      <button class="filter-btn area-filter" data-area="OGX" onclick="setAreaFilter('OGX',this)">OGX</button>
-      <button class="filter-btn area-filter" data-area="ICX" onclick="setAreaFilter('ICX',this)">ICX</button>
-      <button class="filter-btn area-filter" data-area="BD" onclick="setAreaFilter('BD',this)">BD</button>
-      <button class="filter-btn area-filter" data-area="TM" onclick="setAreaFilter('TM',this)">TM</button>
-      <button class="filter-btn area-filter" data-area="F" onclick="setAreaFilter('F',this)">F</button>
-      <button class="filter-btn area-filter" data-area="Mkt" onclick="setAreaFilter('Mkt',this)">Mkt</button>
-      <select class="sort-select" onchange="currentSort=this.value;renderList()">
+      <select class="sort-select" style="flex:1;min-width:100px" onchange="currentSort=this.value;renderList()">
         <option value="popular">人気順</option>
         <option value="newest">新着順</option>
       </select>
@@ -586,9 +586,11 @@ textarea.form-input{resize:vertical}
           <span id="atab-pending-badge" style="display:none;background:var(--aiesec-red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span>
         </button>
         <button id="atab-delete" class="admin-tab-btn" onclick="switchAdminTab('delete')">公開済みを削除</button>
+        <button id="atab-categories" class="admin-tab-btn" onclick="switchAdminTab('categories')">カテゴリ管理</button>
       </div>
       <div id="admin-pending-list"></div>
       <div id="admin-delete-list" style="display:none"></div>
+      <div id="admin-categories-list" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -646,7 +648,7 @@ textarea.form-input{resize:vertical}
 <script>
 // ===== STATE VARIABLES (declared first to avoid TDZ) =====
 let strategies=[],failureCases=[],pendingItems=[],pendingFailures=[];
-let currentFilter="all",currentSort="popular",currentCat="採用",pakuriTargetId=null,currentAreaFilter="all";
+let currentFilter="",currentSort="popular",currentCat="採用",pakuriTargetId=null,currentAreaFilter="";
 let currentFailCat="採用",currentLCFilter="",currentTermFilter="";
 let followupTargetId=null,followupResult=null;
 let isAdminLoggedIn=false;
@@ -669,7 +671,9 @@ const failureRef=db.collection("failure_cases");
 const pendingFailureRef=db.collection("pending_failures");
 
 const ADMIN_PASSWORD="PnF";
-const CATEGORIES=["採用","育成","Planning","チームビルディング","その他"];
+const CATEGORIES_DEFAULT=["採用","育成","Planning","チームビルディング","その他"];
+let CATEGORIES=[...CATEGORIES_DEFAULT];
+const settingsRef=db.collection("settings");
 const AREAS=["OGX","ICX","BD","TM","F","Mkt"];
 const AREA_COLORS={
   "OGX":{bg:"#FEE9E7",text:"#F85A40",border:"#F85A40"},
@@ -734,6 +738,19 @@ function init(){
   buildCatButtons();
   buildFailCatButtons();
 
+  // カテゴリ設定をFirestoreからリアルタイム取得
+  settingsRef.doc("categories").onSnapshot(snap=>{
+    if(snap.exists&&snap.data().list&&snap.data().list.length){
+      CATEGORIES=snap.data().list;
+    }else{
+      CATEGORIES=[...CATEGORIES_DEFAULT];
+    }
+    buildCatButtons();
+    buildFailCatButtons();
+    rebuildCatFilterSelect();
+    if(isAdminLoggedIn)renderAdminPanel();
+  },err=>console.error("categories error:",err));
+
   // 承認済み施策（メイン - これが来たらすぐ描画）
   strategiesRef.onSnapshot(snap=>{
     strategies=snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -797,6 +814,15 @@ function populateLCSelects(){
   }
 }
 
+function rebuildCatFilterSelect(){
+  const sel=document.getElementById("cat-filter-select");
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">全カテゴリ</option>';
+  CATEGORIES.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o)});
+  if(CATEGORIES.includes(cur))sel.value=cur;
+}
+
 function buildCatButtons(){
   const c=document.getElementById("f-cat-btns");c.innerHTML="";
   CATEGORIES.forEach(cat=>{const b=document.createElement("button");b.type="button";b.className="cat-btn";b.textContent=cat;b.onclick=()=>{currentCat=cat;updateCatBtnStyles()};c.appendChild(b)});
@@ -848,35 +874,11 @@ function updateStats(){
   }
 }
 
-function setFilter(cat,btn){
-  currentFilter=cat;
-  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");renderList();
-}
-
-function setAreaFilter(area,btn){
-  currentAreaFilter=area;
-  document.querySelectorAll(".area-filter").forEach(b=>{
-    b.classList.remove("active");
-    const a=b.dataset.area;
-    if(a&&a!=="all"&&AREA_COLORS[a]){
-      b.style.color=AREA_COLORS[a].text;
-      b.style.borderBottomColor="transparent";
-    }else{
-      b.style.color="";b.style.borderBottomColor="";
-    }
-  });
-  btn.classList.add("active");
-  if(area!=="all"&&AREA_COLORS[area]){btn.style.borderBottomColor=AREA_COLORS[area].border;btn.style.color=AREA_COLORS[area].text;}
-  else{btn.style.borderBottomColor="";btn.style.color="";}
-  renderList();
-}
-
 function renderList(){
   const q=(document.querySelector(".search-input")||{}).value?.toLowerCase()||"";
   let items=[...strategies];
-  if(currentFilter!=="all")items=items.filter(s=>s.category===currentFilter);
-  if(currentAreaFilter!=="all")items=items.filter(s=>(s.areas||[]).includes(currentAreaFilter));
+  if(currentFilter)items=items.filter(s=>s.category===currentFilter);
+  if(currentAreaFilter)items=items.filter(s=>(s.areas||[]).includes(currentAreaFilter));
   if(currentLCFilter)items=items.filter(s=>s.lc===currentLCFilter||(s.pakuttaLCs||[]).includes(currentLCFilter));
   if(currentTermFilter)items=items.filter(s=>s.term===currentTermFilter);
   if(q)items=items.filter(s=>s.name.toLowerCase().includes(q)||s.lc.toLowerCase().includes(q)||(s.description||"").toLowerCase().includes(q));
@@ -898,7 +900,7 @@ function renderList(){
 function openRegister(){
   ["f-name","f-desc","f-result","f-link"].forEach(id=>document.getElementById(id).value="");
   ["chk-permission","chk-quantitative","chk-concrete","chk-background"].forEach(id=>document.getElementById(id).checked=false);
-  document.getElementById("f-lc").value="";currentCat="採用";updateCatBtnStyles();
+  document.getElementById("f-lc").value="";currentCat=CATEGORIES[0]||"採用";updateCatBtnStyles();
   // Build area checkboxes
   const ac=document.getElementById("f-area-checks");ac.innerHTML="";
   AREAS.forEach(a=>{
@@ -1264,13 +1266,62 @@ function closeAdmin(){
 function switchAdminTab(tab){
   document.getElementById("atab-pending").classList.toggle("active",tab==="pending");
   document.getElementById("atab-delete").classList.toggle("active",tab==="delete");
+  document.getElementById("atab-categories").classList.toggle("active",tab==="categories");
   document.getElementById("admin-pending-list").style.display=tab==="pending"?"":"none";
   document.getElementById("admin-delete-list").style.display=tab==="delete"?"":"none";
+  document.getElementById("admin-categories-list").style.display=tab==="categories"?"":"none";
+  if(tab==="categories")renderAdminCategories();
 }
 
 function renderAdminPanel(){
   renderAdminPending();
   renderAdminDelete();
+}
+
+function renderAdminCategories(){
+  const el=document.getElementById("admin-categories-list");
+  el.innerHTML=`
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">現在のカテゴリ</div>
+      <div id="cat-list-items" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        ${CATEGORIES.map((c,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
+            <span style="flex:1;font-size:13px;font-weight:600;color:var(--text)">${esc(c)}</span>
+            <span style="font-size:11px;color:var(--text-sub)">${strategies.filter(s=>s.category===c).length}件の施策</span>
+            <button onclick="deleteCategory(${i})" style="padding:4px 10px;border:none;background:#FFEBEE;color:#c62828;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer">削除</button>
+          </div>`).join("")}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="new-cat-input" class="form-input" style="flex:1;padding:8px 12px;font-size:13px" placeholder="新しいカテゴリ名">
+        <button onclick="addCategory()" class="btn-confirm" style="white-space:nowrap">追加</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-sub);margin-top:8px">※ 削除しても既存施策のカテゴリデータは残ります</div>
+    </div>`;
+}
+
+async function addCategory(){
+  const input=document.getElementById("new-cat-input");
+  const name=input.value.trim();
+  if(!name){showToast("カテゴリ名を入力してください");return}
+  if(CATEGORIES.includes(name)){showToast("同じ名前のカテゴリが既に存在します");return}
+  const newList=[...CATEGORIES,name];
+  try{
+    await settingsRef.doc("categories").set({list:newList});
+    input.value="";
+    showToast(`「${name}」を追加しました`);
+  }catch(e){showToast("エラー: "+e.message)}
+}
+
+async function deleteCategory(index){
+  const name=CATEGORIES[index];
+  const count=strategies.filter(s=>s.category===name).length;
+  const msg=count>0?`「${name}」を削除しますか？（${count}件の施策に使用中）`:`「${name}」を削除しますか？`;
+  if(!confirm(msg))return;
+  const newList=CATEGORIES.filter((_,i)=>i!==index);
+  try{
+    await settingsRef.doc("categories").set({list:newList});
+    showToast(`「${name}」を削除しました`);
+  }catch(e){showToast("エラー: "+e.message)}
 }
 
 function renderAdminPending(){
