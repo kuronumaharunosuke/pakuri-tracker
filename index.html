@@ -669,6 +669,7 @@ const strategiesRef=db.collection("strategies");
 const pendingRef=db.collection("pending_strategies");
 const failureRef=db.collection("failure_cases");
 const pendingFailureRef=db.collection("pending_failures");
+const commentsRef=db.collection("comments");
 
 const ADMIN_PASSWORD="PnF";
 const CATEGORIES_DEFAULT=["採用","育成","Planning","チームビルディング","その他"];
@@ -950,7 +951,7 @@ async function submitPakuri(){
   const s=strategies.find(x=>x.id===pakuriTargetId);if(!s)return;
   if((s.pakuttaLCs||[]).includes(lc)){showToast("このLCは既にパクり済みです");closePakuri();return}
   try{
-    await strategiesRef.doc(pakuriTargetId).update({pakuttaLCs:firebase.firestore.FieldValue.arrayUnion(lc)});
+    await strategiesRef.doc(pakuriTargetId).update({pakuttaLCs:firebase.firestore.FieldValue.arrayUnion(lc),lastPakuriAt:new Date().toISOString()});
     closePakuri();showToast("パクり完了！");
   }catch(e){console.error(e);showToast("エラーが発生しました")}
 }
@@ -960,12 +961,19 @@ function openDetail(id){
   const s=strategies.find(x=>x.id===id);if(!s)return;
   const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"],d=new Date(s.createdAt).toLocaleDateString("ja-JP"),p=s.pakuttaLCs||[];
   const fups=s.followups||[];
-  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div style="flex:1"><span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span><h2 style="font-size:17px;font-weight:700;margin:8px 0 4px">${esc(s.name)}</h2><p style="font-size:12px;color:var(--text-sub)">${esc(s.lc)} · ${d}</p></div><button class="btn-close" onclick="closeDetail()">✕</button></div>`;
+  const areasBadgesDetail=(s.areas||[]).map(a=>{const ac=AREA_COLORS[a]||{bg:"#eee",text:"#555",border:"#ccc"};return`<span style="background:${ac.bg};color:${ac.text};border:1px solid ${ac.border};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${a}</span>`}).join(" ");
+  let h=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div style="flex:1">
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+      <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${s.category}</span>
+      ${areasBadgesDetail}
+    </div>
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 4px">${esc(s.name)}</h2>
+    <p style="font-size:12px;color:var(--text-sub)">${esc(s.lc)} · ${d}</p>
+  </div><button class="btn-close" onclick="closeDetail()">✕</button></div>`;
   h+=`<div class="detail-section"><h4>施策内容</h4><p>${esc(s.description)}</p></div>`;
   h+=`<div class="detail-section"><h4>成果</h4><p>${esc(s.result)}</p></div>`;
   if(s.link)h+=`<div class="detail-section"><h4>資料</h4><a href="${esc(s.link)}" target="_blank" style="font-size:13px;color:var(--aiesec-blue);word-break:break-all;font-weight:600">${esc(s.link)}</a></div>`;
   h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:12px"><h4 style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">パクったLC (${p.length})</h4>${p.length===0?'<p style="font-size:13px;color:#aaa">まだ誰もパクってません。最初にパクろう！</p>':'<div class="pakuri-list">'+p.map(l=>`<span class="pakuri-chip">${l.split(" - ")[0]}</span>`).join("")+'</div>'}</div>`;
-  // フォローアップ表示
   if(fups.length){
     const resultLabel={success:"うまくいった",partial:"一部成功",fail:"うまくいかなかった"};
     h+=`<div style="background:var(--bg);border-radius:var(--r);padding:14px;margin-bottom:12px">
@@ -982,10 +990,57 @@ function openDetail(id){
   }
   h+=`<button class="btn-submit" onclick="closeDetail();openPakuri('${s.id}')">この施策をパクる</button>`;
   h+=`<button class="btn-delete" onclick="closeDetail();openFollowup('${s.id}')">パクり結果を報告する</button>`;
+  // コメントセクション
+  h+=`<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+    <h4 style="font-size:13px;font-weight:700;margin-bottom:12px">コメント・質問・フィードバック</h4>
+    <div id="comment-list-${id}" style="margin-bottom:14px"><div style="text-align:center;padding:12px;color:#aaa;font-size:12px">読み込み中...</div></div>
+    <div style="background:var(--bg);border-radius:var(--r);padding:12px">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        ${["コメント","質問","フィードバック"].map((t,i)=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="comment-type" value="${t}" ${i===0?"checked":""}><span>${t}</span></label>`).join("")}
+      </div>
+      <textarea id="comment-input-${id}" class="form-input" rows="2" placeholder="コメントを入力..." style="margin-bottom:8px"></textarea>
+      <button onclick="submitComment('${id}')" class="btn-submit" style="padding:8px 16px;font-size:13px">送信</button>
+    </div>
+  </div>`;
   document.getElementById("detail-content").innerHTML=h;
   document.getElementById("modal-detail").style.display="flex";
+  loadComments(id);
 }
-function closeDetail(){document.getElementById("modal-detail").style.display="none"}
+
+function loadComments(strategyId){
+  const el=document.getElementById(`comment-list-${strategyId}`);
+  if(!el)return;
+  commentsRef.where("strategyId","==",strategyId).orderBy("createdAt","asc").get().then(snap=>{
+    if(!snap.docs.length){el.innerHTML='<p style="font-size:12px;color:#aaa;text-align:center;padding:8px">まだコメントはありません</p>';return}
+    const TYPE_COLORS={"コメント":{bg:"#E3F2FD",text:"#037EF3"},"質問":{bg:"#FFF6DC",text:"#D4991A"},"フィードバック":{bg:"#D6F5E7",text:"#00965A"}};
+    el.innerHTML=snap.docs.map(d=>{
+      const c=d.data();
+      const tc=TYPE_COLORS[c.type]||{bg:"#eee",text:"#555"};
+      const dt=new Date(c.createdAt).toLocaleDateString("ja-JP");
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="background:${tc.bg};color:${tc.text};font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${esc(c.type)}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">${esc(c.author)}</span>
+          <span style="font-size:11px;color:#aaa;margin-left:auto">${dt}</span>
+        </div>
+        <p style="font-size:13px;color:var(--text);margin:0;line-height:1.5">${esc(c.text)}</p>
+      </div>`;
+    }).join("");
+  }).catch(()=>{el.innerHTML='<p style="font-size:12px;color:#aaa">読み込みエラー</p>'});
+}
+
+async function submitComment(strategyId){
+  const text=document.getElementById(`comment-input-${strategyId}`)?.value.trim();
+  const type=document.querySelector('input[name="comment-type"]:checked')?.value||"コメント";
+  if(!text){showToast("コメントを入力してください");return}
+  const author=auth.currentUser?.email||"unknown";
+  try{
+    await commentsRef.add({strategyId,type,text,author,createdAt:new Date().toISOString()});
+    document.getElementById(`comment-input-${strategyId}`).value="";
+    loadComments(strategyId);
+    showToast("投稿しました");
+  }catch(e){showToast("エラー: "+e.message)}
+}
 
 // ===== 自分のLC設定 =====
 function openMyLCSetting(){
@@ -1453,88 +1508,191 @@ async function rejectPending(id){
 function renderDashboard(){
   const tp=strategies.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0);
   const top=[...strategies].sort((a,b)=>(b.pakuttaLCs||[]).length-(a.pakuttaLCs||[]).length)[0];
+
+  // カテゴリ別
   const catStats={};CATEGORIES.forEach(c=>{const it=strategies.filter(s=>s.category===c);catStats[c]={count:it.length,pakuri:it.reduce((s,x)=>s+(x.pakuttaLCs||[]).length,0)}});
-  const maxP=Math.max(...Object.values(catStats).map(s=>s.pakuri),1);
-  const lcP={},lcR={};
-  strategies.forEach(s=>{lcR[s.lc]=(lcR[s.lc]||0)+1;(s.pakuttaLCs||[]).forEach(l=>{lcP[l]=(lcP[l]||0)+1})});
+  const maxCatP=Math.max(...Object.values(catStats).map(s=>s.pakuri),1);
 
-  // ポイント集計
-  const lcPts={};
-  strategies.forEach(s=>{lcPts[s.lc]=(lcPts[s.lc]||0)+1});
-  failureCases.forEach(f=>{if(f.lc)lcPts[f.lc]=(lcPts[f.lc]||0)+3});
-  const topPts=Object.entries(lcPts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const totalPts=Object.values(lcPts).reduce((s,v)=>s+v,0);
+  // LC別集計（投稿・パクられ・パクった・ポイント）
+  const lcStats={};
+  LC_LIST.forEach(l=>{lcStats[l]={post:0,pakured:0,pakuri:0,pts:0}});
+  strategies.forEach(s=>{
+    if(lcStats[s.lc])lcStats[s.lc].post++;
+    else lcStats[s.lc]={post:1,pakured:0,pakuri:0,pts:0};
+    (s.pakuttaLCs||[]).forEach(l=>{
+      if(!lcStats[l])lcStats[l]={post:0,pakured:0,pakuri:0,pts:0};
+      lcStats[l].pakuri++;
+    });
+    if(lcStats[s.lc])lcStats[s.lc].pakured+=(s.pakuttaLCs||[]).length;
+  });
+  failureCases.forEach(f=>{if(f.lc){if(!lcStats[f.lc])lcStats[f.lc]={post:0,pakured:0,pakuri:0,pts:0};lcStats[f.lc].pts+=3}});
+  Object.entries(lcStats).forEach(([l,v])=>{v.pts+=v.post+v.pakured});
+  const lcPtsRanked=Object.entries(lcStats).filter(([,v])=>v.pts>0).sort((a,b)=>b[1].pts-a[1].pts);
+  const totalPts=lcPtsRanked.reduce((s,[,v])=>s+v.pts,0);
 
-  // Term別集計
-  const termStats={};
-  strategies.forEach(s=>{const t=s.term||"不明";if(!termStats[t])termStats[t]={count:0,pakuri:0};termStats[t].count++;termStats[t].pakuri+=(s.pakuttaLCs||[]).length});
-  const sortedTerms=Object.entries(termStats).sort((a,b)=>b[0].localeCompare(a[0]));
+  // 施策別パクられランキング
+  const pakuriRanked=[...strategies].filter(s=>(s.pakuttaLCs||[]).length>0).sort((a,b)=>(b.pakuttaLCs||[]).length-(a.pakuttaLCs||[]).length).slice(0,10);
 
-  const tP=Object.entries(lcP).sort((a,b)=>b[1]-a[1]).slice(0,5),tR=Object.entries(lcR).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  // Term別LC順位
+  const termLcStats={};
+  strategies.forEach(s=>{
+    const t=s.term||"不明";
+    if(!termLcStats[t])termLcStats[t]={};
+    if(!termLcStats[t][s.lc])termLcStats[t][s.lc]={post:0,pakured:0};
+    termLcStats[t][s.lc].post++;
+    termLcStats[t][s.lc].pakured+=(s.pakuttaLCs||[]).length;
+  });
+  const sortedTerms=Object.keys(termLcStats).sort((a,b)=>b.localeCompare(a)).slice(0,4);
+
+  // 最近パクられた新着フィード
+  const recentPakuri=[...strategies].filter(s=>s.lastPakuriAt).sort((a,b)=>new Date(b.lastPakuriAt)-new Date(a.lastPakuriAt)).slice(0,8);
+
+  // アクティビティヒートマップ（月別×LC）
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`)}
+  const heatData={};
+  LC_LIST.forEach(l=>{heatData[l]={};months.forEach(m=>{heatData[l][m]=0})});
+  strategies.forEach(s=>{
+    const d=new Date(s.createdAt);
+    const mk=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(heatData[s.lc]&&heatData[s.lc][mk]!==undefined)heatData[s.lc][mk]++;
+  });
+  const activeLCs=LC_LIST.filter(l=>months.some(m=>heatData[l][m]>0));
+  const maxHeat=Math.max(...activeLCs.flatMap(l=>months.map(m=>heatData[l][m])),1);
+
   let h='<h2 class="section-title">ダッシュボード</h2>';
-  if(top)h+=`<div class="top-card"><div class="label">Most Popular</div><div class="name">${esc(top.name)}</div><div class="meta">${esc(top.lc)} · ${(top.pakuttaLCs||[]).length} LCがパクった</div></div>`;
 
-  // 自分のLCバッジ表示
+  // Most Popular
+  if(top)h+=`<div class="top-card" onclick="openDetail('${top.id}')" style="cursor:pointer"><div class="label">Most Popular</div><div class="name">${esc(top.name)}</div><div class="meta">${esc(top.lc)} · ${(top.pakuttaLCs||[]).length} LCがパクった</div></div>`;
+
+  // 自分のLCバッジ
   if(myLC){
     const myBadges=getBadges(myLC);
-    const myPt=(strategies.filter(s=>s.lc===myLC).length)+(failureCases.filter(f=>f.lc===myLC).length*3);
+    const myV=lcStats[myLC]||{post:0,pakured:0,pakuri:0,pts:0};
     h+=`<div style="background:linear-gradient(135deg,#1A237E,#283593);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;color:#fff">
       <div style="font-size:11px;opacity:0.7;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${myLC.split(" - ")[0]} の実績</div>
-      <div style="font-family:Lato;font-size:28px;font-weight:900;margin-bottom:8px">${myPt} pt</div>
+      <div style="font-family:Lato;font-size:28px;font-weight:900;margin-bottom:6px">${myV.pts} pt</div>
+      <div style="display:flex;gap:16px;font-size:12px;opacity:0.8;margin-bottom:8px">
+        <span>投稿 ${myV.post}</span><span>パクられ ${myV.pakured}</span><span>パクった ${myV.pakuri}</span>
+      </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${myBadges.length
-          ?myBadges.map(b=>`<span class="badge-chip" style="color:${b.color};border-color:${b.color};background:rgba(255,255,255,0.1)"><i class="badge-icon">${b.icon}</i>${b.label}</span>`).join("")
-          :'<span style="font-size:12px;opacity:0.5">まだバッジなし。施策を投稿しよう</span>'}
+        ${myBadges.length?myBadges.map(b=>`<span class="badge-chip" style="color:${b.color};border-color:${b.color};background:rgba(255,255,255,0.1)"><i class="badge-icon">${b.icon}</i>${b.label}</span>`).join(""):'<span style="font-size:12px;opacity:0.5">まだバッジなし。施策を投稿しよう</span>'}
       </div>
     </div>`;
   }
 
-  // ポイントランキング（バッジ付き）
-  h+=`<div class="pt-score-card"><div><div class="lbl">累計ポイント合計</div><div class="big">${totalPts} pt</div><div style="font-size:11px;opacity:0.6;margin-top:2px">成功 1pt · 失敗 3pt</div></div><div style="text-align:right"><div style="font-size:11px;opacity:0.7">失敗事例数</div><div style="font-family:Lato;font-size:24px;font-weight:900">${failureCases.length}</div></div></div>`;
-  h+='<div class="dash-section"><h3>ポイントランキング TOP5</h3>';
-  if(!topPts.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
-  else topPts.forEach(([l,n],i)=>{
+  h+=`<div class="pt-score-card"><div><div class="lbl">累計ポイント合計</div><div class="big">${totalPts} pt</div><div style="font-size:11px;opacity:0.6;margin-top:2px">投稿 1pt · パクられ 1pt/件 · 失敗事例 3pt</div></div><div style="text-align:right"><div style="font-size:11px;opacity:0.7">失敗事例数</div><div style="font-family:Lato;font-size:24px;font-weight:900">${failureCases.length}</div></div></div>`;
+
+  // LC別ポイントランキング（全LC）
+  h+='<div class="dash-section"><h3>LC別ポイントランキング</h3>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px;font-size:10px;font-weight:700;color:var(--text-sub);padding:0 4px"><span>LC</span><span style="text-align:center">投稿/パクられ/パクった</span><span style="text-align:right">PT</span></div>';
+  if(!lcPtsRanked.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
+  else lcPtsRanked.forEach(([l,v],i)=>{
+    const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":"";
     const badges=getBadges(l);
-    const badgeHtml=badges.map(b=>`<span class="badge-chip" style="color:${b.color};border-color:${b.color}" title="${b.desc}"><i class="badge-icon">${b.icon}</i>${b.label}</span>`).join("");
-    h+=`<div class="rank-item" style="flex-wrap:wrap;gap:4px">
-      <span style="min-width:100px">${i+1}. ${l.split(" - ")[0]}</span>
-      <span style="font-weight:700;color:${i===0?"var(--aiesec-blue)":"#555"};margin-left:auto">${n} pt</span>
-      ${badgeHtml?`<div style="width:100%;margin-top:2px">${badgeHtml}</div>`:''}
+    h+=`<div class="rank-item" style="flex-direction:column;align-items:stretch;gap:2px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:12px;font-weight:700;flex:1">${medal?medal+' ':i+1+'. '}${l.split(" - ")[0]}</span>
+        <span style="font-size:11px;color:var(--text-sub)">${v.post} / ${v.pakured} / ${v.pakuri}</span>
+        <span style="font-weight:700;color:${i===0?"var(--aiesec-blue)":"#555"};margin-left:8px;min-width:40px;text-align:right">${v.pts} pt</span>
+      </div>
+      ${badges.length?`<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${badges.map(b=>`<span class="badge-chip" style="color:${b.color};border-color:${b.color};font-size:10px;padding:1px 5px">${b.label}</span>`).join("")}</div>`:''}
     </div>`;
   });
   h+='</div>';
 
-  // Term別統計
+  // 施策別パクられランキング TOP10
+  h+='<div class="dash-section"><h3>施策別パクられランキング TOP10</h3>';
+  if(!pakuriRanked.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
+  else pakuriRanked.forEach((s,i)=>{
+    const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"];
+    const n=(s.pakuttaLCs||[]).length;
+    const maxN=(pakuriRanked[0].pakuttaLCs||[]).length||1;
+    h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openDetail('${s.id}')">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700;color:var(--text-sub);min-width:20px">${i+1}</span>
+        <span class="cat-tag" style="background:${cc.bg};color:${cc.text};font-size:10px;padding:1px 6px">${s.category}</span>
+        <span style="font-size:13px;font-weight:600;flex:1">${esc(s.name)}</span>
+        <span style="font-weight:700;color:var(--aiesec-blue);font-size:13px">${n}</span>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:2px"><div style="height:4px;background:var(--aiesec-blue);border-radius:2px;width:${(n/maxN)*100}%"></div></div>
+    </div>`;
+  });
+  h+='</div>';
+
+  // Term別LC順位
   if(sortedTerms.length){
-    h+='<div class="dash-section"><h3>Term別施策数</h3>';
-    const maxTerm=Math.max(...sortedTerms.map(([,v])=>v.count),1);
-    sortedTerms.forEach(([t,v])=>{
-      const isNow=t===CURRENT_TERM;
-      h+=`<div class="bar-row">
-        <div class="bar-header">
-          <span style="font-weight:600">${t}${isNow?' <span style="font-size:10px;color:var(--aiesec-blue);font-weight:700">今期</span>':''}</span>
-          <span style="color:var(--text-sub)">${v.count}施策 · ${v.pakuri}パクリ</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${(v.count/maxTerm)*100}%;background:${isNow?'var(--aiesec-blue)':'var(--border)'}"></div></div>
+    h+='<div class="dash-section"><h3>Term別 投稿ランキング</h3>';
+    sortedTerms.forEach(term=>{
+      const isNow=term===CURRENT_TERM;
+      const lcs=Object.entries(termLcStats[term]).sort((a,b)=>(b[1].post+b[1].pakured)-(a[1].post+a[1].pakured)).slice(0,3);
+      h+=`<div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:${isNow?"var(--aiesec-blue)":"var(--text-sub)"};margin-bottom:6px">${term}${isNow?' (今期)':''}</div>
+        ${lcs.map(([l,v],i)=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0">
+          <span style="font-size:11px;font-weight:700;color:var(--text-sub);min-width:14px">${i+1}.</span>
+          <span style="font-size:12px;font-weight:600;flex:1">${l.split(" - ")[0]}</span>
+          <span style="font-size:11px;color:var(--text-sub)">${v.post}投稿 · ${v.pakured}パクられ</span>
+        </div>`).join("")}
       </div>`;
     });
     h+='</div>';
   }
 
+  // 最近パクられた新着フィード
+  if(recentPakuri.length){
+    h+='<div class="dash-section"><h3>最近パクられた施策</h3>';
+    recentPakuri.forEach(s=>{
+      const d=new Date(s.lastPakuriAt).toLocaleDateString("ja-JP");
+      const cc=CAT_COLORS[s.category]||CAT_COLORS["その他"];
+      h+=`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openDetail('${s.id}')">
+        <span class="cat-tag" style="background:${cc.bg};color:${cc.text};font-size:10px;padding:1px 6px;white-space:nowrap">${s.category}</span>
+        <span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
+        <span style="font-size:11px;color:#aaa;white-space:nowrap">${d}</span>
+        <span style="font-weight:700;color:var(--aiesec-blue);font-size:12px;white-space:nowrap">${(s.pakuttaLCs||[]).length}パクリ</span>
+      </div>`;
+    });
+    h+='</div>';
+  }
+
+  // LCアクティビティヒートマップ
+  if(activeLCs.length){
+    h+='<div class="dash-section"><h3>LC投稿アクティビティ（直近6ヶ月）</h3>';
+    h+=`<div style="overflow-x:auto"><table style="font-size:11px;border-collapse:collapse;width:100%">
+      <tr><th style="text-align:left;padding:3px 6px;color:var(--text-sub);font-weight:600">LC</th>
+      ${months.map(m=>`<th style="padding:3px 6px;color:var(--text-sub);font-weight:600;text-align:center">${m.split('/')[1]}月</th>`).join("")}
+      <th style="padding:3px 6px;color:var(--text-sub);font-weight:600;text-align:center">合計</th></tr>
+      ${activeLCs.map(l=>{
+        const total=months.reduce((s,m)=>s+heatData[l][m],0);
+        return`<tr><td style="padding:3px 6px;font-weight:600;white-space:nowrap">${l.split(" - ")[0]}</td>
+          ${months.map(m=>{
+            const v=heatData[l][m];
+            const intensity=v===0?0:Math.max(0.15,v/maxHeat);
+            const bg=v===0?'transparent':`rgba(3,126,243,${intensity})`;
+            const col=intensity>0.5?"#fff":"var(--text)";
+            return`<td style="padding:3px 6px;text-align:center;background:${bg};border-radius:3px;color:${col};font-weight:${v>0?'700':'400'}">${v||'·'}</td>`;
+          }).join("")}
+          <td style="padding:3px 6px;text-align:center;font-weight:700;color:var(--aiesec-blue)">${total}</td></tr>`;
+      }).join("")}
+    </table></div>`;
+    h+='</div>';
+  }
+
+  // カテゴリ別
+  const termStatsSimple={};
+  strategies.forEach(s=>{const t=s.term||"不明";if(!termStatsSimple[t])termStatsSimple[t]={count:0,pakuri:0};termStatsSimple[t].count++;termStatsSimple[t].pakuri+=(s.pakuttaLCs||[]).length});
   h+='<div class="dash-section"><h3>カテゴリ別</h3>';
-  CATEGORIES.forEach(c=>{const cc=CAT_COLORS[c],st=catStats[c];h+=`<div class="bar-row"><div class="bar-header"><span style="font-weight:600;color:${cc.text}">${c}</span><span style="color:var(--text-sub)">${st.count}施策 · ${st.pakuri}パクリ</span></div><div class="bar-track"><div class="bar-fill" style="width:${(st.pakuri/maxP)*100}%;background:${cc.fill}"></div></div></div>`});
-  h+='</div><div class="grid-2"><div class="dash-section"><h3>パクリ王 TOP5</h3>';
-  if(!tP.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
-  else tP.forEach(([l,n],i)=>{h+=`<div class="rank-item"><span>${i+1}. ${l.split(" - ")[0]}</span><span style="font-weight:700;color:var(--aiesec-blue)">${n}</span></div>`});
-  h+='</div><div class="dash-section"><h3>登録王 TOP5</h3>';
-  if(!tR.length)h+='<p style="font-size:12px;color:#aaa">データなし</p>';
-  else tR.forEach(([l,n],i)=>{h+=`<div class="rank-item"><span>${i+1}. ${l.split(" - ")[0]}</span><span style="font-weight:700;color:var(--aiesec-teal)">${n}</span></div>`});
-  h+='</div></div><div class="dash-section"><h3>KPI進捗</h3>';
+  CATEGORIES.forEach(c=>{const cc=CAT_COLORS[c]||CAT_COLORS["その他"],st=catStats[c]||{count:0,pakuri:0};h+=`<div class="bar-row"><div class="bar-header"><span style="font-weight:600;color:${cc.text}">${c}</span><span style="color:var(--text-sub)">${st.count}施策 · ${st.pakuri}パクリ</span></div><div class="bar-track"><div class="bar-fill" style="width:${(st.pakuri/maxCatP)*100}%;background:${cc.fill}"></div></div></div>`});
+  h+='</div>';
+
+  // KPI進捗
+  h+='<div class="dash-section"><h3>KPI進捗</h3>';
   [{label:"施策登録数",cur:strategies.length,tar:100,col:"var(--aiesec-teal)"},{label:"パクリ実装数",cur:tp,tar:300,col:"var(--aiesec-blue)"},{label:"失敗事例数",cur:failureCases.length,tar:50,col:"#d32f2f"}].forEach(k=>{
-    const p=Math.round((k.cur/k.tar)*100);
-    h+=`<div class="kpi-row"><div class="kpi-header"><span class="label">${k.label}</span><span style="color:${k.col};font-weight:700">${k.cur} / ${k.tar}</span></div><div class="kpi-track"><div class="kpi-fill" style="width:${Math.min(p,100)}%;background:${k.col}"></div></div><div class="kpi-pct">達成率: ${p}%</div></div>`;
+    const pct=Math.round((k.cur/k.tar)*100);
+    h+=`<div class="kpi-row"><div class="kpi-header"><span class="label">${k.label}</span><span style="color:${k.col};font-weight:700">${k.cur} / ${k.tar}</span></div><div class="kpi-track"><div class="kpi-fill" style="width:${Math.min(pct,100)}%;background:${k.col}"></div></div><div class="kpi-pct">達成率: ${pct}%</div></div>`;
   });
   h+='</div>';
+
   document.getElementById("tab-dashboard").innerHTML=h;
 }
 // ===== ユーティリティ =====
