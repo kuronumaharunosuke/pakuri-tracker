@@ -947,11 +947,11 @@ function totals(){
 function buildNav(){
   // エリア横断ナビ
   const crossNav = document.getElementById('nav-cross');
-  if(crossNav && D.areaTypes){
-    crossNav.innerHTML = D.areaTypes.map(at=>{
-      // 全LCのこのエリアの合計stats
+  if(crossNav){
+    const areaTypes = (D&&D.areaTypes) ? D.areaTypes : DEFAULT_AREA_TYPES;
+    crossNav.innerHTML = areaTypes.map(at=>{
       let d=0,t=0;
-      D.lcs.forEach(lc=>{const s=lcAreaStats(lc.id,at.id);d+=s.done;t+=s.total;});
+      if(D&&D.lcs) D.lcs.forEach(lc=>{const s=lcAreaStats(lc.id,at.id);d+=s.done;t+=s.total;});
       const pct=t?Math.round(d/t*100):0;
       const active=view==='cross'&&areaId===at.id;
       return `<div class="nav-item${active?' active':''}" onclick="swCross('${at.id}')"
