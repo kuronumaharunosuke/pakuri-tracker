@@ -455,7 +455,6 @@ textarea.form-input{resize:vertical}
     <h2 class="section-title">設定</h2>
     <div class="dash-section" style="display:flex;flex-direction:column;gap:0">
       <button class="settings-btn" onclick="exportData()">データをエクスポート（JSON）</button>
-      <button class="settings-btn danger" onclick="loadSampleData()">サンプルデータを投入</button>
       <div class="howto">
         <p style="font-weight:700;margin-bottom:4px">使い方</p>
         <p>1. 「＋ 登録」から他LCに共有したい施策を投稿</p>
@@ -488,7 +487,14 @@ textarea.form-input{resize:vertical}
     <div class="form-group"><label>エリア（複数選択可）</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="f-area-checks"></div></div>
     <div class="form-group"><label>この施策で何をした？ *</label><textarea id="f-desc" class="form-input" rows="3" placeholder="具体的に何をしたかを書いてください"></textarea></div>
     <div class="form-group"><label>どんな成果が出た？ *</label><textarea id="f-result" class="form-input" rows="2" placeholder="数字でも定性でもOK"></textarea></div>
-    <div class="form-group"><label>資料リンク（任意）</label><input id="f-link" class="form-input" placeholder="https://..."></div>
+    <div class="form-group">
+      <label>資料リンク（任意）</label>
+      <input id="f-link" class="form-input" placeholder="https://...">
+      <div style="margin-top:5px;padding:7px 10px;background:#FFF3E0;border-radius:6px;font-size:11px;color:#E65100;display:flex;align-items:flex-start;gap:5px">
+        <span>⚠️</span>
+        <span>Google Driveの場合、共有設定を<strong>「リンクを知っている全員」＋「閲覧者」</strong>に設定してください。編集権限を付けると他LCに勝手に編集される可能性があります。</span>
+      </div>
+    </div>
     <div style="background:#F3F4F7;border-radius:8px;padding:14px 16px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:#52565E;margin-bottom:10px">投稿前チェック</div>
       <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;cursor:pointer;font-size:13px;color:#52565E">
