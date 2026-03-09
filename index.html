@@ -1007,6 +1007,8 @@ function openDetail(id){
   loadComments(id);
 }
 
+function closeDetail(){document.getElementById("modal-detail").style.display="none"}
+
 function loadComments(strategyId){
   const el=document.getElementById(`comment-list-${strategyId}`);
   if(!el)return;
