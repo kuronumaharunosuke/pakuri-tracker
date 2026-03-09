@@ -1562,11 +1562,26 @@ function renderAdminDelete(){
     html+=`<div style="text-align:center;padding:16px;color:#aaa;font-size:13px;background:var(--bg);border-radius:var(--r);margin-bottom:16px">公開済みの施策はありません</div>`;
   }else{
     html+=[...strategies].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(s=>{
-      return`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px">
-        <span style="display:inline-flex;gap:3px;flex-wrap:wrap;flex-shrink:0">${catBadges(s,true)}</span>
-        <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
-        <span style="font-size:11px;color:#aaa;flex-shrink:0">${s.lc.split(" - ")[0]}</span>
-        <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteStrategy('${s.id}')">削除</button>
+      const catBtns=CATEGORIES.map(c=>{
+        const cc=CAT_COLORS[c]||{bg:"#EDE9FE",text:"#5B21B6",border:"#7C3AED"};
+        const sel=getCategories(s).includes(c);
+        return`<button type="button" data-cat="${c}" onclick="togglePublishedCat('${s.id}','${c}','strategy')"
+          style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;
+          border:1.5px solid ${sel?cc.border:'#ccc'};background:${sel?cc.bg:'#fff'};color:${sel?cc.text:'#aaa'}">${c}</button>`;
+      }).join("");
+      return`<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px">
+          <span style="display:inline-flex;gap:3px;flex-wrap:wrap;flex-shrink:0">${catBadges(s,true)}</span>
+          <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
+          <span style="font-size:11px;color:#aaa;flex-shrink:0">${s.lc.split(" - ")[0]}</span>
+          <button onclick="toggleCatEditor('ce-${s.id}')" style="flex-shrink:0;padding:4px 10px;font-size:11px;font-weight:700;border:1px solid var(--aiesec-blue);background:var(--white);color:var(--aiesec-blue);border-radius:4px;cursor:pointer">カテゴリ編集</button>
+          <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteStrategy('${s.id}')">削除</button>
+        </div>
+        <div id="ce-${s.id}" style="display:none;padding:10px 12px 12px;border-top:1px solid var(--border);background:#F8F9FA">
+          <div style="font-size:11px;font-weight:700;color:var(--text-sub);margin-bottom:7px">カテゴリを変更（複数選択可）</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="cats-${s.id}">${catBtns}</div>
+          <button onclick="savePublishedCats('${s.id}','strategy')" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;background:var(--aiesec-blue);color:#fff;border-radius:6px;cursor:pointer">保存</button>
+        </div>
       </div>`;
     }).join("");
   }
@@ -1577,16 +1592,75 @@ function renderAdminDelete(){
     html+=`<div style="text-align:center;padding:16px;color:#aaa;font-size:13px;background:var(--bg);border-radius:var(--r)">公開済みの失敗事例はありません</div>`;
   }else{
     html+=[...failureCases].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(f=>{
-      return`<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--white);border:1.5px solid #FFCDD2;border-radius:var(--r);margin-bottom:6px">
-        <span style="display:inline-flex;gap:2px;flex-wrap:wrap;flex-shrink:0">${getCategories(f).map(c=>`<span class="failure-tag" style="flex-shrink:0">${c}</span>`).join("")}</span>
-        <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
-        <span style="font-size:11px;color:#aaa;flex-shrink:0">${(f.displayLc||f.lc).split(" - ")[0]}</span>
-        <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteFailureCase('${f.id}')">削除</button>
+      const catBtns=CATEGORIES.map(c=>{
+        const sel=getCategories(f).includes(c);
+        return`<button type="button" data-cat="${c}" onclick="togglePublishedCat('${f.id}','${c}','failure')"
+          style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;
+          border:1.5px solid ${sel?'#c62828':'#ccc'};background:${sel?'#FFEBEE':'#fff'};color:${sel?'#c62828':'#aaa'}">${c}</button>`;
+      }).join("");
+      return`<div style="background:var(--white);border:1.5px solid #FFCDD2;border-radius:var(--r);margin-bottom:6px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px">
+          <span style="display:inline-flex;gap:2px;flex-wrap:wrap;flex-shrink:0">${getCategories(f).map(c=>`<span class="failure-tag" style="flex-shrink:0">${c}</span>`).join("")}</span>
+          <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+          <span style="font-size:11px;color:#aaa;flex-shrink:0">${(f.displayLc||f.lc).split(" - ")[0]}</span>
+          <button onclick="toggleCatEditor('ce-${f.id}')" style="flex-shrink:0;padding:4px 10px;font-size:11px;font-weight:700;border:1px solid #c62828;background:var(--white);color:#c62828;border-radius:4px;cursor:pointer">カテゴリ編集</button>
+          <button class="btn-reject" style="flex-shrink:0;padding:6px 12px;font-size:12px" onclick="deleteFailureCase('${f.id}')">削除</button>
+        </div>
+        <div id="ce-${f.id}" style="display:none;padding:10px 12px 12px;border-top:1px solid #FFCDD2;background:#FFF8F8">
+          <div style="font-size:11px;font-weight:700;color:var(--text-sub);margin-bottom:7px">カテゴリを変更（複数選択可）</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="cats-${f.id}">${catBtns}</div>
+          <button onclick="savePublishedCats('${f.id}','failure')" style="padding:5px 14px;font-size:12px;font-weight:700;border:none;background:#c62828;color:#fff;border-radius:6px;cursor:pointer">保存</button>
+        </div>
       </div>`;
     }).join("");
   }
 
   el.innerHTML=html;
+}
+
+// 公開済みカテゴリ編集（管理者削除パネル）
+const publishedCatEdits={};
+function toggleCatEditor(elId){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.style.display=el.style.display==="none"?"block":"none";
+}
+function togglePublishedCat(id,cat,type){
+  const source=type==="strategy"?strategies:failureCases;
+  const item=source.find(x=>x.id===id);if(!item)return;
+  if(!publishedCatEdits[id]) publishedCatEdits[id]=[...getCategories(item)];
+  const cats=publishedCatEdits[id];
+  const idx=cats.indexOf(cat);
+  if(idx>=0) cats.splice(idx,1); else cats.push(cat);
+  if(!cats.length){showToast("最低1つ選択してください");if(idx>=0)cats.push(cat);return;}
+  // ボタンの見た目を更新
+  const container=document.getElementById(`cats-${id}`);
+  if(!container)return;
+  container.querySelectorAll("button[data-cat]").forEach(b=>{
+    const c=b.dataset.cat;
+    const sel=cats.includes(c);
+    if(type==="strategy"){
+      const cc=CAT_COLORS[c]||{bg:"#EDE9FE",text:"#5B21B6",border:"#7C3AED"};
+      b.style.borderColor=sel?cc.border:"#ccc";
+      b.style.background=sel?cc.bg:"#fff";
+      b.style.color=sel?cc.text:"#aaa";
+    }else{
+      b.style.borderColor=sel?"#c62828":"#ccc";
+      b.style.background=sel?"#FFEBEE":"#fff";
+      b.style.color=sel?"#c62828":"#aaa";
+    }
+  });
+}
+async function savePublishedCats(id,type){
+  const newCats=publishedCatEdits[id];
+  if(!newCats||!newCats.length){showToast("カテゴリを1つ以上選択してください");return;}
+  try{
+    const ref=type==="strategy"?strategiesRef:failureRef;
+    await ref.doc(id).update({categories:newCats});
+    delete publishedCatEdits[id];
+    showToast("カテゴリを更新しました");
+    renderAdminPanel();
+  }catch(e){showToast("エラー: "+e.message)}
 }
 
 // 管理者パネルで承認前カテゴリをトグル
