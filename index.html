@@ -848,7 +848,7 @@ function buildCatButtons(){
 
 function updateCatBtnStyles(){
   document.querySelectorAll("#f-cat-btns .cat-btn").forEach(b=>{
-    const c=b.textContent,cc=CAT_COLORS[c];
+    const c=b.textContent,cc=CAT_COLORS[c]||{bg:"#EDE9FE",text:"#5B21B6",border:"#7C3AED"};
     if(c===currentCat){b.style.borderColor=cc.border;b.style.background=cc.bg;b.style.color=cc.text}
     else{b.style.borderColor="var(--border)";b.style.background="var(--white)";b.style.color="#aaa"}
   });
@@ -1161,7 +1161,7 @@ function buildFailCatButtons(){
 }
 function updateFailCatBtnStyles(){
   document.querySelectorAll("#ff-cat-btns .cat-btn").forEach(b=>{
-    const c=b.textContent,cc=CAT_COLORS[c];
+    const c=b.textContent,cc=CAT_COLORS[c]||{bg:"#EDE9FE",text:"#5B21B6",border:"#7C3AED"};
     if(c===currentFailCat){b.style.borderColor=cc.border;b.style.background=cc.bg;b.style.color=cc.text}
     else{b.style.borderColor="var(--border)";b.style.background="var(--white)";b.style.color="#aaa"}
   });
