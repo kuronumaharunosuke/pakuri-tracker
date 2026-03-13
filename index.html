@@ -612,8 +612,8 @@ textarea.form-input{resize:vertical}
       <button class="btn-close" onclick="closeFailureRegister()">✕</button>
     </div>
     <div class="anon-check-row" onclick="document.getElementById('f-anon').click()">
-      <input type="checkbox" id="f-anon">
-      <label for="f-anon">匿名で投稿する（LC名が「匿名LC」として表示されます）</label>
+      <input type="checkbox" id="f-anon" onclick="event.stopPropagation()">
+      <label for="f-anon" onclick="event.stopPropagation()">匿名で投稿する（LC名が「匿名LC」として表示されます）</label>
     </div>
     <div class="form-group"><label>失敗した施策名 *</label><input id="ff-name" class="form-input" placeholder="例: 新入生向けセミナー施策"></div>
     <div id="ff-lc-group" class="form-group"><label>あなたのLC *</label><select id="ff-lc" class="form-input"><option value="">選択してください</option></select></div>
