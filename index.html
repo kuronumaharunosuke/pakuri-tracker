@@ -568,14 +568,12 @@ textarea.form-input{resize:vertical}
 <div id="modal-admin-login" class="overlay center" style="display:none" onclick="closeAdminLogin()">
   <div class="modal center-modal" style="max-width:380px;padding:28px 24px" onclick="event.stopPropagation()">
     <div class="pw-modal-title">管理者ログイン</div>
-    <div class="pw-modal-sub">管理者パスワードを入力してください</div>
-    <input type="password" id="admin-pw-input" class="pw-input" placeholder="••••"
-      oninput="document.getElementById('pw-error').textContent=''"
-      onkeydown="if(event.key==='Enter')checkAdminPw()">
+    <div class="pw-modal-sub">あなたのアカウントに管理者権限があるか確認します</div>
+    <div id="admin-user-email" style="font-size:13px;color:var(--text-sub);margin:10px 0 4px;text-align:center"></div>
     <div id="pw-error" class="pw-error"></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn-cancel" onclick="closeAdminLogin()">キャンセル</button>
-      <button class="btn-confirm" onclick="checkAdminPw()">ログイン</button>
+      <button id="btn-admin-check" class="btn-confirm" onclick="checkAdminPw()">確認する</button>
     </div>
   </div>
 </div>
@@ -680,7 +678,8 @@ const failureRef=db.collection("failure_cases");
 const pendingFailureRef=db.collection("pending_failures");
 const commentsRef=db.collection("comments");
 
-const ADMIN_PASSWORD="PnF";
+// 管理者はFirestoreのadminsコレクションで管理（ドキュメントID=メールアドレス）
+const adminsRef=db.collection("admins");
 const CATEGORIES_DEFAULT=["採用","育成","Planning","チームビルディング","その他"];
 let CATEGORIES=[...CATEGORIES_DEFAULT];
 const settingsRef=db.collection("settings");
@@ -1332,27 +1331,33 @@ ${caseSummary}
 
 // ===== 管理者ログイン =====
 function openAdminLogin(){
-  document.getElementById("admin-pw-input").value="";
+  const user=auth.currentUser;
   document.getElementById("pw-error").textContent="";
+  document.getElementById("admin-user-email").textContent=user?user.email:"";
+  document.getElementById("btn-admin-check").disabled=false;
+  document.getElementById("btn-admin-check").textContent="確認する";
   document.getElementById("modal-admin-login").style.display="flex";
-  setTimeout(()=>document.getElementById("admin-pw-input").focus(),100);
 }
 function closeAdminLogin(){document.getElementById("modal-admin-login").style.display="none"}
 
-function checkAdminPw(){
-  const pw=document.getElementById("admin-pw-input").value;
-  if(pw===ADMIN_PASSWORD){
-    isAdminLoggedIn=true;
-    closeAdminLogin();
-    openAdminPanel();
-  }else{
-    document.getElementById("pw-error").textContent="パスワードが違います";
-    document.getElementById("admin-pw-input").value="";
-    document.getElementById("admin-pw-input").focus();
-    // シェイクアニメーション
-    const inp=document.getElementById("admin-pw-input");
-    inp.style.borderColor="var(--aiesec-red)";
-    setTimeout(()=>inp.style.borderColor="",1000);
+async function checkAdminPw(){
+  const user=auth.currentUser;
+  if(!user){closeAdminLogin();return;}
+  const btn=document.getElementById("btn-admin-check");
+  btn.disabled=true;btn.textContent="確認中...";
+  try{
+    const doc=await adminsRef.doc(user.email).get();
+    if(doc.exists){
+      isAdminLoggedIn=true;
+      closeAdminLogin();
+      openAdminPanel();
+    }else{
+      document.getElementById("pw-error").textContent="管理者権限がありません（"+user.email+"）";
+      btn.disabled=false;btn.textContent="確認する";
+    }
+  }catch(e){
+    document.getElementById("pw-error").textContent="エラーが発生しました: "+e.message;
+    btn.disabled=false;btn.textContent="確認する";
   }
 }
 
