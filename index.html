@@ -709,6 +709,18 @@ const adminsRef=db.collection("admins");
 const settingsRef=db.collection("settings");
 
 /* ===================== CONSTANTS ===================== */
+/* 承認待ち投稿の通知メール（Google Apps Script のウェブアプリURLを入れる） */
+const NOTIFY_URL=""; // ← 例: "https://script.google.com/macros/s/xxxxxxxx/exec"
+function notifyAdmins(payload){
+  if(!NOTIFY_URL)return;
+  try{
+    fetch(NOTIFY_URL,{
+      method:"POST",mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(payload)
+    }).catch(e=>console.warn("通知失敗",e));
+  }catch(e){console.warn("通知失敗",e)}
+}
 const CATEGORIES_DEFAULT=["採用","育成","Planning","チームビルディング","その他"];
 let CATEGORIES=[...CATEGORIES_DEFAULT];
 const AREAS=["OGX","ICX","BD","TM","F","Mkt"];
@@ -1177,6 +1189,7 @@ async function submitRegister(){
       collabNote:seeking?document.getElementById("f-seek-note").value.trim():"",
       collabRequests:[]
     });
+    notifyAdmins({type:"strategy",name,lc,term,status:formStatus,by:myEmail(),summary:purpose+"\n\n"+desc});
     closeRegister();
     showToast("投稿しました。承認をお待ちください");
   }catch(e){console.error(e);showToast("エラー: "+e.message);btn.disabled=false;setFormStatus(formStatus)}
@@ -1647,6 +1660,7 @@ async function submitFailure(){
       createdAt:new Date().toISOString(),submittedAt:new Date().toISOString(),
       submittedBy:myEmail(),ownerEmail:myEmail()
     });
+    notifyAdmins({type:"failure",name,lc:anon?"匿名LC":lc,by:anon?"":myEmail(),summary:fail});
     closeFailureRegister();showToast("投稿しました。承認後に公開されます");
   }catch(e){showToast("エラー: "+e.message);btn.disabled=false;btn.textContent="投稿する（失敗事例・3pt）"}
 }
