@@ -710,7 +710,7 @@ const settingsRef=db.collection("settings");
 
 /* ===================== CONSTANTS ===================== */
 /* 承認待ち投稿の通知メール（Google Apps Script のウェブアプリURLを入れる） */
-const NOTIFY_URL=""; // ← 例: "https://script.google.com/macros/s/xxxxxxxx/exec"
+const NOTIFY_URL="https://script.google.com/macros/s/AKfycbxaYS71UhNeFFCzx0rxFlwrJvxGDkNDKnCm-5K142V7CDgY-k51Zl41eCSx1Mdz6K23/exec";
 function notifyAdmins(payload){
   if(!NOTIFY_URL)return;
   try{
